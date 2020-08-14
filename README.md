@@ -4,8 +4,7 @@
 
 ### Functions
 
-+ xlogger
-+ xterminal
++ **xlogger**
 
 ### Dependency
 
