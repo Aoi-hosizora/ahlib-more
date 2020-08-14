@@ -1,4 +1,4 @@
-package xlogger
+package xlogrus
 
 import (
 	"github.com/sirupsen/logrus"

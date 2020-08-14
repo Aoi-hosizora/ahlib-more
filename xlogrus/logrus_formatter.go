@@ -1,9 +1,9 @@
-package xlogger
+package xlogrus
 
 import (
 	"bytes"
 	"fmt"
-	"github.com/Aoi-hosizora/ahlib/xterminal"
+	"github.com/Aoi-hosizora/ahlib/xcolor"
 	"github.com/sirupsen/logrus"
 	"runtime"
 	"strings"
@@ -15,13 +15,14 @@ type CustomFormatter struct {
 	RuntimeCaller func(*runtime.Frame) (function string, file string)
 	ForceColor    bool
 
-	isTerminal       bool
 	terminalInitOnce sync.Once
 }
 
 func (f *CustomFormatter) init(entry *logrus.Entry) {
 	if entry.Logger != nil {
-		f.isTerminal = xterminal.InitTerminal(entry.Logger.Out)
+		if runtime.GOOS != "windows" || f.ForceColor {
+			xcolor.InitTerminal(entry.Logger.Out)
+		}
 	}
 }
 
@@ -58,7 +59,7 @@ func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	message := strings.TrimSuffix(entry.Message, "\n")
 	now := entry.Time.Format(timestampFormat)
 
-	if f.ForceColor || (f.isTerminal && runtime.GOOS != "windows") {
+	if f.ForceColor || runtime.GOOS != "windows" {
 		var levelColor int
 		switch entry.Level {
 		case logrus.DebugLevel, logrus.TraceLevel:
