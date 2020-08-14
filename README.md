@@ -1,5 +1,7 @@
 # ahlib-more
 
+[![Build Status](https://www.travis-ci.org/Aoi-hosizora/ahlib-more.svg?branch=master)](https://www.travis-ci.org/Aoi-hosizora/ahlib-more)
+
 + Some useful golang functions library for personal use, using some small library. Split from [Aoi-hosizora/ahlib](https://github.com/Aoi-hosizora/ahlib).
 
 ### Functions
