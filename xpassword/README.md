@@ -2,5 +2,6 @@
 
 ### Functions
 
-+ `EncryptPassword(password []byte, cost int) ([]byte, error)`
-+ `CheckPassword(password, encrypted []byte) (bool, error)`
++ `Encrypt(password []byte, cost int) ([]byte, error)`
++ `EncryptWithDefaultCost(password []byte) ([]byte, error)`
++ `Check(password, encrypted []byte) (bool, error)`

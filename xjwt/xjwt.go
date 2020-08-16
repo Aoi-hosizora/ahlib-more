@@ -4,7 +4,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-var DefaultValidatorError = jwt.ValidationError{}
+var DefaultValidationError = jwt.NewValidationError("token is invalid", jwt.ValidationErrorClaimsInvalid)
 
 func GenerateToken(claims jwt.Claims, secret []byte) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -23,19 +23,28 @@ func ParseToken(signedToken string, secret []byte, claims jwt.Claims) (jwt.Claim
 	token, err := jwt.ParseWithClaims(signedToken, claims, keyFunc)
 	if err != nil {
 		return nil, err
-	} else if !token.Valid {
-		return nil, DefaultValidatorError
 	}
 
 	return token.Claims, nil
 }
 
-func IsTokenExpireError(err error) bool {
+// Check standard Claim validation errors.
+func CheckFlagError(err error, flag uint32) bool {
 	if err == nil {
 		return false
 	}
 	if ve, ok := err.(*jwt.ValidationError); ok {
-		return ve.Errors&jwt.ValidationErrorExpired != 0
+		return ve.Errors&flag != 0
 	}
 	return false
+}
+
+// EXP validation failed.
+func TokenExpired(err error) bool {
+	return CheckFlagError(err, jwt.ValidationErrorExpired)
+}
+
+// IAT validation failed.
+func TokenNotIssued(err error) bool {
+	return CheckFlagError(err, jwt.ValidationErrorIssuedAt)
 }

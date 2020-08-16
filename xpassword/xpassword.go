@@ -5,12 +5,14 @@ import (
 )
 
 const (
-	MinCost     int = 4  // The minimum allowable cost as passed in to bcrypt.GenerateFromPassword.
-	MaxCost     int = 31 // The maximum allowable cost as passed in to bcrypt.GenerateFromPassword.
-	DefaultCost int = 10 // The cost that will actually be set if a cost below MinCost is passed into bcrypt.GenerateFromPassword.
+	MinCost     int = 4  // The minimum allowable cost.
+	MaxCost     int = 31 // The maximum allowable cost.
+	DefaultCost int = 10 // The cost that will actually be set if a cost is below MinCost.
 )
 
-func EncryptPassword(password []byte, cost int) ([]byte, error) {
+// Use bcrypt with cost to encrypt password.
+// If the cost given is less than MinCost, the cost will be set to DefaultCost instead.
+func Encrypt(password []byte, cost int) ([]byte, error) {
 	encrypted, err := bcrypt.GenerateFromPassword(password, cost)
 	if err != nil {
 		return nil, err
@@ -18,11 +20,18 @@ func EncryptPassword(password []byte, cost int) ([]byte, error) {
 	return encrypted, nil
 }
 
-func CheckPassword(password, encrypted []byte) (bool, error) {
+// Use bcrypt with DefaultCost to encrypt password.
+func EncryptWithDefaultCost(password []byte) ([]byte, error) {
+	return Encrypt(password, DefaultCost)
+}
+
+// Check the password is the same.
+func Check(password, encrypted []byte) (bool, error) {
 	err := bcrypt.CompareHashAndPassword(encrypted, password)
 	if err == nil {
 		return true, nil
-	} else if err == bcrypt.ErrMismatchedHashAndPassword {
+	}
+	if err == bcrypt.ErrMismatchedHashAndPassword {
 		return false, nil
 	}
 	return false, err

@@ -13,29 +13,33 @@ func TestJwt(t *testing.T) {
 		jwt.StandardClaims
 	}
 
+	log.Println(DefaultValidationError.Error())
+	log.Println(CheckFlagError(DefaultValidationError, jwt.ValidationErrorClaimsInvalid))
+
 	secret := []byte("A!B@C#D$E%F^G&")
 	token, err := GenerateToken(&userClaims{
 		Uid: 1,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(5 * time.Second).Unix(),
+			IssuedAt:  time.Now().Add(1 * time.Second).Unix(),
 		},
 	}, secret)
 	log.Println(token, err)
 
 	claims, err := ParseToken(token, secret, &userClaims{})
-	log.Println(claims, err)
+	log.Println(TokenExpired(err), TokenNotIssued(err)) // false true
 	c, ok := claims.(*userClaims)
-	log.Println(c, ok)
+	log.Println(c, ok) // nil false
 
 	time.Sleep(3 * time.Second)
 	_, err = ParseToken(token, secret, &userClaims{})
-	log.Println(IsTokenExpireError(err))
+	log.Println(TokenExpired(err), TokenNotIssued(err)) // false false
 
 	time.Sleep(3 * time.Second)
 	_, err = ParseToken(token, secret, &userClaims{})
-	log.Println(IsTokenExpireError(err))
+	log.Println(TokenExpired(err), TokenNotIssued(err)) // ? false
 
 	time.Sleep(1 * time.Second)
 	_, err = ParseToken(token, secret, &userClaims{})
-	log.Println(IsTokenExpireError(err))
+	log.Println(TokenExpired(err), TokenNotIssued(err)) // true false
 }
