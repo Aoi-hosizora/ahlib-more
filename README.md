@@ -9,6 +9,9 @@
 + xlogger
 + **xlogrus**
 + **xjwt**
++ **xpassword**
++ xhash
++ xencode
 
 ### Dependency
 
@@ -18,3 +21,4 @@
 + `gopkg.in/natefinch/lumberjack.v2 v2.0.0`
 + `github.com/lestrrat-go/file-rotatelogs v2.3.0+incompatible`
 + `github.com/dgrijalva/jwt-go v3.2.0+incompatible`
++ `golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de`
