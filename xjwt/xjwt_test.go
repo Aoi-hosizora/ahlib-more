@@ -42,4 +42,7 @@ func TestJwt(t *testing.T) {
 	time.Sleep(1 * time.Second)
 	_, err = ParseToken(token, secret, &userClaims{})
 	log.Println(TokenExpired(err), TokenNotIssued(err)) // true false
+
+	_ = TokenIssuerInvalid
+	_ = TokenNotValidYet
 }

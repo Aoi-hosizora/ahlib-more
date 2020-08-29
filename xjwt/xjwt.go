@@ -48,3 +48,13 @@ func TokenExpired(err error) bool {
 func TokenNotIssued(err error) bool {
 	return CheckFlagError(err, jwt.ValidationErrorIssuedAt)
 }
+
+// ISS validation failed.
+func TokenIssuerInvalid(err error) bool {
+	return CheckFlagError(err, jwt.ValidationErrorIssuer)
+}
+
+// NBF validation failed.
+func TokenNotValidYet(err error) bool {
+	return CheckFlagError(err, jwt.ValidationErrorNotValidYet)
+}

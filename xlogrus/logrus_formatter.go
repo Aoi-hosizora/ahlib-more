@@ -12,9 +12,8 @@ import (
 )
 
 type CustomFormatter struct {
-	RuntimeCaller func(*runtime.Frame) (function string, file string)
-	ForceColor    bool
-
+	RuntimeCaller    func(*runtime.Frame) (function string, file string)
+	ForceColor       bool
 	terminalInitOnce sync.Once
 }
 

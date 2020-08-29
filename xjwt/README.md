@@ -8,3 +8,5 @@
 + `CheckFlagError(err error, flag uint32) bool`
 + `TokenExpired(err error) bool`
 + `TokenNotIssued(err error) bool`
++ `TokenIssuerInvalid(err error) bool`
++ `TokenNotValidYet(err error) bool`
