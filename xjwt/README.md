@@ -1,5 +1,9 @@
 # xjwt
 
+### Dependencies
+
++ github.com/dgrijalva/jwt-go
+
 ### Functions
 
 + `var DefaultValidatorError jwt.ValidationError`

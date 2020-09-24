@@ -1,5 +1,9 @@
 # xhash
 
+### Dependencies
+
++ xtesting*
+
 ### Functions
 
 + `FNV32(text string) uint32`

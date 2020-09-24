@@ -4,6 +4,7 @@
 .history/
 .idea
 
-### Build ###
-build/
+### Project ###
 logs/
+build/
+coverage.txt
