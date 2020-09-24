@@ -1,5 +1,9 @@
 # xencode
 
+### Dependencies
+
++ xtesting*
+
 ### Functions
 
 + `Base32Encode(data []byte) string`
