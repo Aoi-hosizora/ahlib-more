@@ -15,6 +15,7 @@
 + **xjwt**
 + **xpassword**
 + xcrypto
++ **xcharset**
 
 ### Dependency
 
@@ -25,3 +26,5 @@
 + `github.com/lestrrat-go/file-rotatelogs v2.3.0+incompatible`
 + `github.com/dgrijalva/jwt-go v3.2.0+incompatible`
 + `golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de`
++ `github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca`
++ `golang.org/x/text v0.3.2`
