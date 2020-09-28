@@ -1,4 +1,4 @@
-package xhash
+package xcrypto
 
 import (
 	"github.com/Aoi-hosizora/ahlib/xtesting"
@@ -43,4 +43,26 @@ func TestSHA256(t *testing.T) {
 func TestSHA512(t *testing.T) {
 	data := SHA512("Raed Shomali")
 	xtesting.Equal(t, data, "406e8d495140187a8b09893c30d054cf385ad7359855db0d2e0386c7189ac1c4667a4816d1b63a19f3d8ccdcbace7861ec4cc6ff5e2a1659c8f4360bda699b42")
+}
+
+func TestBase32Encode(t *testing.T) {
+	data := Base32Encode([]byte("Raed Shomali"))
+	xtesting.Equal(t, data, "KJQWKZBAKNUG63LBNRUQ====")
+}
+
+func TestBase32Decode(t *testing.T) {
+	data, err := Base32Decode("KJQWKZBAKNUG63LBNRUQ====")
+	xtesting.Equal(t, err, nil)
+	xtesting.Equal(t, string(data), "Raed Shomali")
+}
+
+func TestBase64Encode(t *testing.T) {
+	data := Base64Encode([]byte("Raed Shomali"))
+	xtesting.Equal(t, data, "UmFlZCBTaG9tYWxp")
+}
+
+func TestBase64Decode(t *testing.T) {
+	data, err := Base64Decode("UmFlZCBTaG9tYWxp")
+	xtesting.Equal(t, err, nil)
+	xtesting.Equal(t, string(data), "Raed Shomali")
 }

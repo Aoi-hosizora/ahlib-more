@@ -14,8 +14,7 @@
 + **xlogrus**
 + **xjwt**
 + **xpassword**
-+ xhash
-+ xencode
++ xcrypto
 
 ### Dependency
 
