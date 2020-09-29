@@ -10,15 +10,15 @@ import (
 
 // RotateLogHook's config
 type RotateLogConfig struct {
-	MaxAge       time.Duration
-	RotationTime time.Duration
-	LocalTime    bool
+	MaxAge       time.Duration // default to one week
+	RotationTime time.Duration // default to one day
+	LocalTime    bool          // default to false (UTC)
+	ForceNewFile bool          // force to create a new file to record log
 
-	Filepath     string
-	Filename     string // without ext
-	ForceNewFile bool
-	Level        logrus.Level
-	Formatter    logrus.Formatter
+	Filepath  string           // log filepath
+	Filename  string           // log filename, without extension
+	Level     logrus.Level     // log level
+	Formatter logrus.Formatter // text formatter
 }
 
 // Write log into files (split logs to files automatically)
@@ -35,10 +35,9 @@ func NewRotateLogHook(config *RotateLogConfig) logrus.Hook {
 		rotatelogs.WithMaxAge(config.MaxAge),
 		rotatelogs.WithRotationTime(config.RotationTime),
 	}
+	options = append(options, rotatelogs.WithClock(rotatelogs.UTC))
 	if config.LocalTime {
 		options = append(options, rotatelogs.WithClock(rotatelogs.Local))
-	} else {
-		options = append(options, rotatelogs.WithClock(rotatelogs.UTC))
 	}
 	if config.ForceNewFile {
 		options = append(options, rotatelogs.ForceNewFile())
@@ -62,8 +61,9 @@ func (r *RotateLogHook) Levels() []logrus.Level {
 func (r *RotateLogHook) Fire(entry *logrus.Entry) error {
 	b, err := r.config.Formatter.Format(entry)
 	if err != nil {
-		return err
+		return err // unreachable
 	}
+
 	_, _ = r.logWriter.Write(b) // lock
 	return nil
 }

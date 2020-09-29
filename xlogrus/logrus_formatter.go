@@ -45,13 +45,16 @@ func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		if f.RuntimeCaller != nil {
 			funcVal, fileVal = f.RuntimeCaller(entry.Caller)
 		}
-		if fileVal == "" {
-			caller = funcVal
-		} else if funcVal == "" {
-			caller = fileVal
-		} else {
-			caller = fileVal + " " + funcVal
+		sp := strings.Builder{}
+		if fileVal != "" {
+			sp.WriteString(" ")
+			sp.WriteString(fileVal)
 		}
+		if funcVal != "" {
+			sp.WriteString(" ")
+			sp.WriteString(funcVal)
+		}
+		caller = sp.String()
 	}
 
 	levelText := strings.ToUpper(entry.Level.String())[0:4]
@@ -67,7 +70,7 @@ func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 			levelColor = 33 // yellow
 		case logrus.ErrorLevel, logrus.FatalLevel, logrus.PanicLevel:
 			levelColor = 31 // red
-		default:
+		default: // info
 			levelColor = 36 // blue
 		}
 		_, _ = fmt.Fprintf(b, "\x1b[%dm%s\x1b[0m [%s]%s %-44s ", levelColor, levelText, now, caller, message)

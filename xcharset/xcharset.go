@@ -32,8 +32,9 @@ func DetectCharsetBest(bs []byte) (*DetectResult, error) {
 	detector := chardet.NewTextDetector()
 	result, err := detector.DetectBest(bs)
 	if err != nil {
-		return nil, err
+		return nil, err // unreachable
 	}
+
 	return newDetectResultFromChardet(result), nil
 }
 
@@ -42,7 +43,7 @@ func DetectCharsetAll(bs []byte) ([]*DetectResult, error) {
 	detector := chardet.NewTextDetector()
 	results, err := detector.DetectAll(bs)
 	if err != nil {
-		return nil, err
+		return nil, err // unreachable
 	}
 
 	out := make([]*DetectResult, len(results))

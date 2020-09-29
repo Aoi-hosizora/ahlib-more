@@ -14,9 +14,9 @@ type RotateFileConfig struct {
 	LocalTime  bool // default to use UTC time
 	Compress   bool // default not to perform compression
 
-	Filename  string
-	Level     logrus.Level
-	Formatter logrus.Formatter
+	Filename  string           // log filename (with filepath, filename and extension)
+	Level     logrus.Level     // log level
+	Formatter logrus.Formatter // text formatter
 }
 
 // Write log into files (split logs to files manually)
@@ -46,8 +46,9 @@ func (r *RotateFileHook) Levels() []logrus.Level {
 func (r *RotateFileHook) Fire(entry *logrus.Entry) error {
 	b, err := r.config.Formatter.Format(entry)
 	if err != nil {
-		return err
+		return err // unreachable
 	}
+
 	_, _ = r.logWriter.Write(b) // lock
 	return nil
 }

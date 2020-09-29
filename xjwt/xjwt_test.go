@@ -1,6 +1,7 @@
 package xjwt
 
 import (
+	"fmt"
 	"github.com/Aoi-hosizora/ahlib/xtesting"
 	"github.com/dgrijalva/jwt-go"
 	"testing"
@@ -11,8 +12,10 @@ func TestError(t *testing.T) {
 	xtesting.Equal(t, DefaultValidationError.Error(), "token is invalid")
 	xtesting.Equal(t, DefaultValidationError.Errors, jwt.ValidationErrorClaimsInvalid)
 
-	xtesting.True(t, CheckFlagError(DefaultValidationError, jwt.ValidationErrorClaimsInvalid))
+	xtesting.False(t, CheckFlagError(nil, jwt.ValidationErrorExpired))
+	xtesting.False(t, CheckFlagError(fmt.Errorf("other error"), jwt.ValidationErrorExpired))
 	xtesting.False(t, CheckFlagError(DefaultValidationError, jwt.ValidationErrorExpired))
+	xtesting.True(t, CheckFlagError(DefaultValidationError, jwt.ValidationErrorClaimsInvalid))
 
 	xtesting.True(t, TokenExpired(jwt.NewValidationError("", jwt.ValidationErrorExpired)))
 	xtesting.False(t, TokenExpired(DefaultValidationError))
@@ -30,7 +33,30 @@ func TestError(t *testing.T) {
 	xtesting.False(t, TokenClaimsInvalid(jwt.NewValidationError("", jwt.ValidationErrorNotValidYet)))
 }
 
-func TestGenerateTokenAndParseToken(t *testing.T) {
+type fakeMethod struct{}
+
+func (f fakeMethod) Verify(string, string, interface{}) error {
+	return nil
+}
+
+func (f fakeMethod) Sign(string, interface{}) (string, error) {
+	return "", fmt.Errorf("fake error")
+}
+
+func (f fakeMethod) Alg() string {
+	return ""
+}
+
+func TestGenerateToken(t *testing.T) {
+	fake := &fakeMethod{}
+	_, err := GenerateTokenWithMethod(fake, &jwt.StandardClaims{}, []byte{})
+	xtesting.NotNil(t, err)
+
+	_, err = GenerateToken(&jwt.StandardClaims{}, []byte{})
+	xtesting.Nil(t, err)
+}
+
+func TestToken(t *testing.T) {
 	secret := []byte("A!B@C#D$E%F^G&")
 	type userClaims struct {
 		Uid uint64
