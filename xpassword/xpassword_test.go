@@ -1,6 +1,7 @@
 package xpassword
 
 import (
+	"github.com/Aoi-hosizora/ahlib/xtesting"
 	"log"
 	"testing"
 )
@@ -8,18 +9,20 @@ import (
 func TestPassword(t *testing.T) {
 	password := []byte("123")
 
-	encrypted, err := Encrypt(password, MinCost)
-	log.Println(string(encrypted), err)
+	_ = MaxCost
+	for _, cost := range []int{1, MinCost, 7, DefaultCost, 13} { // 1 4 7 10 13
+		encrypted, err := Encrypt(password, cost)
+		xtesting.Nil(t, err)
+		log.Println(cost, ":", string(encrypted))
+		check, err := Check(password, encrypted)
+		xtesting.Nil(t, err)
+		xtesting.True(t, check)
+	}
+
+	encrypted, err := EncryptWithDefaultCost(password)
+	xtesting.Nil(t, err)
+	log.Println(DefaultCost, ":", string(encrypted))
 	check, err := Check(password, encrypted)
-	log.Println(check, err)
-
-	encrypted, err = Encrypt(password, DefaultCost)
-	log.Println(string(encrypted), err)
-	check, err = Check(password, encrypted)
-	log.Println(check, err)
-
-	encrypted, err = EncryptWithDefaultCost(password)
-	log.Println(string(encrypted), err)
-	check, err = Check(password, encrypted)
-	log.Println(check, err)
+	xtesting.Nil(t, err)
+	xtesting.True(t, check)
 }

@@ -1,48 +1,70 @@
 package xjwt
 
 import (
+	"github.com/Aoi-hosizora/ahlib/xtesting"
 	"github.com/dgrijalva/jwt-go"
-	"log"
 	"testing"
 	"time"
 )
 
-func TestJwt(t *testing.T) {
+func TestError(t *testing.T) {
+	xtesting.Equal(t, DefaultValidationError.Error(), "token is invalid")
+	xtesting.Equal(t, DefaultValidationError.Errors, jwt.ValidationErrorClaimsInvalid)
+
+	xtesting.True(t, CheckFlagError(DefaultValidationError, jwt.ValidationErrorClaimsInvalid))
+	xtesting.False(t, CheckFlagError(DefaultValidationError, jwt.ValidationErrorExpired))
+
+	xtesting.True(t, TokenExpired(jwt.NewValidationError("", jwt.ValidationErrorExpired)))
+	xtesting.False(t, TokenExpired(DefaultValidationError))
+
+	xtesting.True(t, TokenNotIssued(jwt.NewValidationError("", jwt.ValidationErrorIssuedAt)))
+	xtesting.False(t, TokenNotIssued(DefaultValidationError))
+
+	xtesting.True(t, TokenIssuerInvalid(jwt.NewValidationError("", jwt.ValidationErrorIssuer)))
+	xtesting.False(t, TokenIssuerInvalid(DefaultValidationError))
+
+	xtesting.True(t, TokenNotValidYet(jwt.NewValidationError("", jwt.ValidationErrorNotValidYet)))
+	xtesting.False(t, TokenNotValidYet(DefaultValidationError))
+
+	xtesting.True(t, TokenClaimsInvalid(DefaultValidationError))
+	xtesting.False(t, TokenClaimsInvalid(jwt.NewValidationError("", jwt.ValidationErrorNotValidYet)))
+}
+
+func TestGenerateTokenAndParseToken(t *testing.T) {
+	secret := []byte("A!B@C#D$E%F^G&")
 	type userClaims struct {
 		Uid uint64
 		jwt.StandardClaims
 	}
 
-	log.Println(DefaultValidationError.Error())
-	log.Println(CheckFlagError(DefaultValidationError, jwt.ValidationErrorClaimsInvalid))
-
-	secret := []byte("A!B@C#D$E%F^G&")
+	now := time.Now()
 	token, err := GenerateToken(&userClaims{
 		Uid: 1,
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(5 * time.Second).Unix(),
-			IssuedAt:  time.Now().Add(1 * time.Second).Unix(),
+			ExpiresAt: now.Add(2 * time.Second).Unix(),
+			IssuedAt:  now.Add(1 * time.Second).Unix(),
 		},
 	}, secret)
-	log.Println(token, err)
+	xtesting.Nil(t, err)
 
+	// not issued
+	_, err = ParseToken(token, secret, &userClaims{})
+	xtesting.NotNil(t, err)
+	xtesting.True(t, TokenNotIssued(err))
+	xtesting.False(t, TokenExpired(err))
+
+	// issued
+	time.Sleep(1100 * time.Millisecond)
 	claims, err := ParseToken(token, secret, &userClaims{})
-	log.Println(TokenExpired(err), TokenNotIssued(err)) // false true
-	c, ok := claims.(*userClaims)
-	log.Println(c, ok) // nil false
+	cl, ok := claims.(*userClaims)
+	xtesting.True(t, ok)
+	xtesting.Equal(t, cl.ExpiresAt-now.Unix(), int64(2))
+	xtesting.Equal(t, cl.IssuedAt-now.Unix(), int64(1))
 
-	time.Sleep(3 * time.Second)
+	// expired
+	time.Sleep(2000 * time.Millisecond)
 	_, err = ParseToken(token, secret, &userClaims{})
-	log.Println(TokenExpired(err), TokenNotIssued(err)) // false false
-
-	time.Sleep(3 * time.Second)
-	_, err = ParseToken(token, secret, &userClaims{})
-	log.Println(TokenExpired(err), TokenNotIssued(err)) // ? false
-
-	time.Sleep(1 * time.Second)
-	_, err = ParseToken(token, secret, &userClaims{})
-	log.Println(TokenExpired(err), TokenNotIssued(err)) // true false
-
-	_ = TokenIssuerInvalid
-	_ = TokenNotValidYet
+	xtesting.NotNil(t, err)
+	xtesting.False(t, TokenNotIssued(err))
+	xtesting.True(t, TokenExpired(err))
 }

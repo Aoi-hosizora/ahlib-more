@@ -4,8 +4,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-var DefaultValidationError = jwt.NewValidationError("token is invalid", jwt.ValidationErrorClaimsInvalid)
-
 func GenerateToken(claims jwt.Claims, secret []byte) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(secret)
@@ -27,6 +25,9 @@ func ParseToken(signedToken string, secret []byte, claims jwt.Claims) (jwt.Claim
 
 	return token.Claims, nil
 }
+
+// Default validation error, use jwt.ValidationErrorClaimsInvalid.
+var DefaultValidationError = jwt.NewValidationError("token is invalid", jwt.ValidationErrorClaimsInvalid)
 
 // Check standard Claim validation errors.
 func CheckFlagError(err error, flag uint32) bool {
@@ -57,4 +58,9 @@ func TokenIssuerInvalid(err error) bool {
 // NBF validation failed.
 func TokenNotValidYet(err error) bool {
 	return CheckFlagError(err, jwt.ValidationErrorNotValidYet)
+}
+
+// Generic claims validation error.
+func TokenClaimsInvalid(err error) bool {
+	return CheckFlagError(err, jwt.ValidationErrorClaimsInvalid)
 }
