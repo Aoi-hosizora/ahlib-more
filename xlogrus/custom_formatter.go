@@ -12,38 +12,39 @@ import (
 )
 
 type CustomFormatter struct {
-	RuntimeCaller    func(*runtime.Frame) (function string, file string)
-	ForceColor       bool
+	TimestampFormat string
+	RuntimeCaller   func(*runtime.Frame) (function string, file string)
+	ForceColor      bool
+
 	terminalInitOnce sync.Once
 }
 
+func (f *CustomFormatter) hasColor() bool {
+	return runtime.GOOS != "windows" || f.ForceColor
+}
+
 func (f *CustomFormatter) init(entry *logrus.Entry) {
-	if entry.Logger != nil {
-		if runtime.GOOS != "windows" || f.ForceColor {
-			xcolor.InitTerminal(entry.Logger.Out)
-		}
+	if entry.Logger != nil && f.hasColor() {
+		xcolor.InitTerminal(entry.Logger.Out)
 	}
 }
 
 func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	f.terminalInitOnce.Do(func() {
-		f.init(entry)
-	})
+	f.terminalInitOnce.Do(func() { f.init(entry) })
 
-	var b *bytes.Buffer
+	b := &bytes.Buffer{}
 	if entry.Buffer != nil {
 		b = entry.Buffer
-	} else {
-		b = &bytes.Buffer{}
 	}
 
-	timestampFormat := time.RFC3339
 	caller := ""
 	if entry.HasCaller() {
-		funcVal := fmt.Sprintf("%s()", entry.Caller.Function)
-		fileVal := fmt.Sprintf("%s:%d", entry.Caller.File, entry.Caller.Line)
+		var funcVal, fileVal string
 		if f.RuntimeCaller != nil {
 			funcVal, fileVal = f.RuntimeCaller(entry.Caller)
+		} else {
+			funcVal = fmt.Sprintf("%s()", entry.Caller.Function)
+			fileVal = fmt.Sprintf("%s:%d", entry.Caller.File, entry.Caller.Line)
 		}
 		sp := strings.Builder{}
 		if fileVal != "" {
@@ -57,11 +58,16 @@ func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		caller = sp.String()
 	}
 
+	timeFmt := time.RFC3339
+	if f.TimestampFormat != "" {
+		timeFmt = f.TimestampFormat
+	}
+
 	levelText := strings.ToUpper(entry.Level.String())[0:4]
 	message := strings.TrimSuffix(entry.Message, "\n")
-	now := entry.Time.Format(timestampFormat)
+	now := entry.Time.Format(timeFmt)
 
-	if f.ForceColor || runtime.GOOS != "windows" {
+	if f.hasColor() {
 		var levelColor int
 		switch entry.Level {
 		case logrus.DebugLevel, logrus.TraceLevel:
@@ -73,9 +79,9 @@ func (f *CustomFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 		default: // info
 			levelColor = 36 // blue
 		}
-		_, _ = fmt.Fprintf(b, "\x1b[%dm%s\x1b[0m [%s]%s %-44s ", levelColor, levelText, now, caller, message)
+		_, _ = fmt.Fprintf(b, "\x1b[%dm%s\x1b[0m [%s]%s %s", levelColor, levelText, now, caller, message)
 	} else {
-		_, _ = fmt.Fprintf(b, "%s [%s]%s %-44s ", levelText, now, caller, message)
+		_, _ = fmt.Fprintf(b, "%s [%s]%s %s", levelText, now, caller, message)
 	}
 
 	b.WriteByte('\n')
