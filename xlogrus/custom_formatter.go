@@ -14,17 +14,17 @@ import (
 type CustomFormatter struct {
 	TimestampFormat string
 	RuntimeCaller   func(*runtime.Frame) (function string, file string)
-	ForceColor      bool
+	DisableColor    bool
 
 	terminalInitOnce sync.Once
 }
 
 func (f *CustomFormatter) hasColor() bool {
-	return runtime.GOOS != "windows" || f.ForceColor
+	return !f.DisableColor
 }
 
 func (f *CustomFormatter) init(entry *logrus.Entry) {
-	if entry.Logger != nil && f.hasColor() {
+	if entry.Logger != nil && f.hasColor() { // runtime.GOOS == "windows"
 		xcolor.InitTerminal(entry.Logger.Out)
 	}
 }

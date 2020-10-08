@@ -30,10 +30,7 @@ func newDetectResultFromChardet(r *chardet.Result) *DetectResult {
 // DetectCharsetBest returns the Result with highest Confidence.
 func DetectCharsetBest(bs []byte) (*DetectResult, error) {
 	detector := chardet.NewTextDetector()
-	result, err := detector.DetectBest(bs)
-	if err != nil {
-		return nil, err // unreachable
-	}
+	result, _ := detector.DetectBest(bs)
 
 	return newDetectResultFromChardet(result), nil
 }
@@ -41,10 +38,7 @@ func DetectCharsetBest(bs []byte) (*DetectResult, error) {
 // DetectCharsetBest returns all Results which have non-zero Confidence. The Results are sorted by Confidence in descending order.
 func DetectCharsetAll(bs []byte) ([]*DetectResult, error) {
 	detector := chardet.NewTextDetector()
-	results, err := detector.DetectAll(bs)
-	if err != nil {
-		return nil, err // unreachable
-	}
+	results, _ := detector.DetectAll(bs)
 
 	out := make([]*DetectResult, len(results))
 	for idx := range results {
