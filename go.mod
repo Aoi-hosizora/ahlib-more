@@ -4,19 +4,11 @@ go 1.14
 
 require (
 	github.com/Aoi-hosizora/ahlib v1.4.3
-	github.com/BurntSushi/toml v0.3.1 // indirect
+	github.com/ah-forklib/lumberjack v0.0.0-20201027021347-0dae85f5680a
+	github.com/ah-forklib/rotatelogs v0.0.0-20201027030445-0980b2e1e9b3
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
-	github.com/jehiah/go-strftime v0.0.0-20171201141054-1d33003b3869 // indirect
-	github.com/jonboulle/clockwork v0.2.0 // indirect
-	github.com/lestrrat-go/file-rotatelogs v2.3.0+incompatible
-	github.com/lestrrat-go/strftime v1.0.3 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca
-	github.com/sirupsen/logrus v1.6.0
-	github.com/tebeka/strftime v0.1.5 // indirect
+	github.com/sirupsen/logrus v1.7.0
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
 	golang.org/x/text v0.3.2
-	gopkg.in/natefinch/lumberjack.v2 v2.0.0
-	gopkg.in/yaml.v2 v2.3.0 // indirect
 )

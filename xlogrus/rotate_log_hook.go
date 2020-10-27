@@ -1,7 +1,7 @@
 package xlogrus
 
 import (
-	"github.com/lestrrat-go/file-rotatelogs"
+	"github.com/ah-forklib/rotatelogs"
 	"github.com/sirupsen/logrus"
 	"io"
 	"path"

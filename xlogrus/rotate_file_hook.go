@@ -1,8 +1,8 @@
 package xlogrus
 
 import (
+	"github.com/ah-forklib/lumberjack"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
 )
 

@@ -22,8 +22,8 @@
 + See [go.mod](./go.mod) and [go.sum](./go.sum)
 + `github.com/Aoi-hosizora/ahlib v1.4.1`
 + `github.com/sirupsen/logrus v1.6.0`
-+ `gopkg.in/natefinch/lumberjack.v2 v2.0.0`
-+ `github.com/lestrrat-go/file-rotatelogs v2.3.0+incompatible`
++ `github.com/ah-forklib/lumberjack v0.0.0-20201027021347-0dae85f5680a`
++ `github.com/ah-forklib/rotatelogs v0.0.0-20201027030445-0980b2e1e9b3`
 + `github.com/dgrijalva/jwt-go v3.2.0+incompatible`
 + `golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de`
 + `github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca`
