@@ -8,7 +8,14 @@
 
 + Some useful golang functions library for personal use, using some small libraries. Split from [Aoi-hosizora/ahlib](https://github.com/Aoi-hosizora/ahlib).
 
-### Functions
+### Related libraries
+
++ [Aoi-hosizora/ahlib](https://github.com/Aoi-hosizora/ahlib)
++ [Aoi-hosizora/ahlib-more](https://github.com/Aoi-hosizora/ahlib-more)
++ [Aoi-hosizora/ahlib-web](https://github.com/Aoi-hosizora/ahlib-web)
++ [Aoi-hosizora/ahlib-db](https://github.com/Aoi-hosizora/ahlib-db)
+
+### Packages
 
 + xlogger
 + **xlogrus**
@@ -20,8 +27,8 @@
 ### Dependency
 
 + See [go.mod](./go.mod) and [go.sum](./go.sum)
-+ `github.com/Aoi-hosizora/ahlib v1.4.1`
-+ `github.com/sirupsen/logrus v1.6.0`
++ `github.com/Aoi-hosizora/ahlib v1.4.3`
++ `github.com/sirupsen/logrus v1.7.0`
 + `github.com/ah-forklib/lumberjack v0.0.0-20201027021347-0dae85f5680a`
 + `github.com/ah-forklib/rotatelogs v0.0.0-20201027030445-0980b2e1e9b3`
 + `github.com/dgrijalva/jwt-go v3.2.0+incompatible`
