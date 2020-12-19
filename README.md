@@ -1,6 +1,6 @@
 # ahlib-more
 
-[![Build Status](https://www.travis-ci.org/Aoi-hosizora/ahlib-more.svg?branch=master)](https://www.travis-ci.org/Aoi-hosizora/ahlib-more)
+[![Build Status](https://travis-ci.com/Aoi-hosizora/ahlib-more.svg?branch=master)](https://travis-ci.com/Aoi-hosizora/ahlib-more)
 [![codecov](https://codecov.io/gh/Aoi-hosizora/ahlib-more/branch/master/graph/badge.svg)](https://codecov.io/gh/Aoi-hosizora/ahlib-more)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Aoi-hosizora/ahlib-more)](https://goreportcard.com/report/github.com/Aoi-hosizora/ahlib-more)
 [![License](http://img.shields.io/badge/license-mit-blue.svg)](./LICENSE)
