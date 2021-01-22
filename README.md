@@ -17,12 +17,13 @@
 
 ### Packages
 
-+ xlogger
-+ **xlogrus**
-+ **xjwt**
-+ **xpassword**
-+ xcrypto
-+ **xcharset**
++ xlogger (waiting for refactoring)
++ xlogrus (waiting for refactoring)
++ xjwt (waiting for refactoring)
++ xcrypto (waiting for refactoring)
++ xcharset (waiting for refactoring)
++ xregexp
++ xvalidator (waiting for refactoring)
 
 ### Dependency
 

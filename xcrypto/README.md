@@ -2,6 +2,7 @@
 
 ### Dependencies
 
++ golang.org/x/crypto/bcrypt
 + xtesting*
 
 ### Functions
@@ -21,3 +22,6 @@
 + `Base32Decode(data string) ([]byte, error)`
 + `Base64Encode(data []byte) string`
 + `Base64Decode(data string) ([]byte, error)`
++ `Encrypt(password []byte, cost int) ([]byte, error)`
++ `EncryptWithDefaultCost(password []byte) ([]byte, error)`
++ `Check(password, encrypted []byte) (bool, error)`
