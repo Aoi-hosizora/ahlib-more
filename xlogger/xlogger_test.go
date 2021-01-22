@@ -4,16 +4,39 @@ import (
 	"testing"
 )
 
-func TestStdLogger(t *testing.T) {
-	StdLogger.Println("")
-	// Println arg list ends with redundant newline
-	// StdLogger.Println("\n")
-	StdLogger.Println("test")
+func TestStd(t *testing.T) {
+	Std.Print("test")
+	Std.Printf("%s", "test")
+	Std.Println("test")
+	func() {
+		defer func() { recover() }()
+		Std.Panic("test")
+	}()
+	func() {
+		defer func() { recover() }()
+		Std.Panicf("test")
+	}()
+	func() {
+		defer func() { recover() }()
+		Std.Panicln("test")
+	}()
 }
 
-// noinspection GoPrintFunctions
-func TestIStdLogger(t *testing.T) {
-	var l IStdLogger = StdLogger
-	l.Println("")
+func TestStdLogger(t *testing.T) {
+	var l StdLogger = Std
+	l.Print("test")
+	l.Printf("%s", "test")
 	l.Println("test")
+	func() {
+		defer func() { recover() }()
+		l.Panic("test")
+	}()
+	func() {
+		defer func() { recover() }()
+		l.Panicf("test")
+	}()
+	func() {
+		defer func() { recover() }()
+		l.Panicln("test")
+	}()
 }

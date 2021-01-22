@@ -2,20 +2,50 @@ package xcharset
 
 import (
 	"github.com/Aoi-hosizora/ahlib/xtesting"
+	"golang.org/x/text/encoding/japanese"
 	"golang.org/x/text/encoding/unicode"
 	"testing"
 )
 
-func TestDetectCharsetBest(t *testing.T) {
-	res, err := DetectCharsetBest([]byte("test"))
-	xtesting.Nil(t, err)
-	xtesting.Equal(t, res.Charset, "ISO-8859-1")
-}
+func TestDetect(t *testing.T) {
+	for _, tc := range []struct {
+		give         []byte
+		wantCharset  string
+		wantLanguage string
+		wantOk       bool
+	}{
+		{[]byte{}, "UTF-8", "", true},
+		{[]byte{0xFF}, "", "", false},
+		{[]byte{0xEF, 0xBB, 0xBF}, "UTF-8", "", true},
+		{[]byte{0xEF, 0xBF, 0xBD}, "UTF-8", "", true},
+		{[]byte{'t', 'e', 's', 't'}, "ISO-8859-1", "en", true},
+		// 简体中文编码：测试文本。
+		{[]byte{0xe7, 0xae, 0x80, 0xe4, 0xbd, 0x93, 0xe4, 0xb8, 0xad, 0xe6, 0x96, 0x87, 0xe7, 0xbc, 0x96, 0xe7, 0xa0, 0x81, 0xef, 0xbc, 0x9a, 0xe6, 0xb5, 0x8b, 0xe8, 0xaf, 0x95, 0xe6, 0x96, 0x87, 0xe6, 0x9c, 0xac, 0xe3, 0x80, 0x82}, "UTF-8", "", true},
+		{[]byte{0xBC, 0xF2, 0xCC, 0xE5, 0xD6, 0xD0, 0xCE, 0xC4, 0xB1, 0xE0, 0xC2, 0xEB, 0xA3, 0xBA, 0xB2, 0xE2, 0xCA, 0xD4, 0xCE, 0xC4, 0xB1, 0xBE, 0xA1, 0xA3}, "GB18030", "zh", true},
+		// 繁體中文編碼：測試文本。
+		{[]byte{0xe7, 0xb9, 0x81, 0xe9, 0xab, 0x94, 0xe4, 0xb8, 0xad, 0xe6, 0x96, 0x87, 0xe7, 0xb7, 0xa8, 0xe7, 0xa2, 0xbc, 0xef, 0xbc, 0x9a, 0xe6, 0xb8, 0xac, 0xe8, 0xa9, 0xa6, 0xe6, 0x96, 0x87, 0xe6, 0x9c, 0xac, 0xe3, 0x80, 0x82}, "UTF-8", "", true},
+		{[]byte{0xC1, 0x63, 0xC5, 0xE9, 0xA4, 0xA4, 0xA4, 0xE5, 0xBD, 0x73, 0xBD, 0x58, 0xA1, 0x47, 0xB4, 0xFA, 0xB8, 0xD5, 0xA4, 0xE5, 0xA5, 0xBB, 0xA1, 0x43}, "Big5", "zh", true},
+		{[]byte{0xB7, 0xB1, 0xF3, 0x77, 0xD6, 0xD0, 0xCE, 0xC4, 0xBE, 0x8E, 0xB4, 0x61, 0xA3, 0xBA, 0x9C, 0x79, 0xD4, 0x87, 0xCE, 0xC4, 0xB1, 0xBE, 0xA1, 0xA3}, "GB18030", "zh", true},
+		// 日本語コーディング：テス
+		{[]byte{0xe6, 0x97, 0xa5, 0xe6, 0x9c, 0xac, 0xe8, 0xaa, 0x9e, 0xe3, 0x82, 0xb3, 0xe3, 0x83, 0xbc, 0xe3, 0x83, 0x87, 0xe3, 0x82, 0xa3, 0xe3, 0x83, 0xb3, 0xe3, 0x82, 0xb0, 0xef, 0xbc, 0x9a, 0xe3, 0x83, 0x86, 0xe3, 0x82, 0xb9}, "UTF-8", "", true},
+		{[]byte{0x93, 0xFA, 0x96, 0x7B, 0x8C, 0xEA, 0x83, 0x52, 0x81, 0x5B, 0x83, 0x66, 0x83, 0x42, 0x83, 0x93, 0x83, 0x4F, 0x81, 0x46, 0x83, 0x65, 0x83, 0x58}, "Shift_JIS", "ja", true},
+		{[]byte{0xC6, 0xFC, 0xCB, 0xDC, 0xB8, 0xEC, 0xA5, 0xB3, 0xA1, 0xBC, 0xA5, 0xC7, 0xA5, 0xA3, 0xA5, 0xF3, 0xA5, 0xB0, 0xA1, 0xA7, 0xA5, 0xC6, 0xA5, 0xB9}, "EUC-JP", "ja", true},
+		{[]byte{0x1B, 0x24, 0x42, 0x46, 0x7C, 0x4B, 0x5C, 0x38, 0x6C, 0x25, 0x33, 0x21, 0x3C, 0x25, 0x47, 0x25, 0x23, 0x25, 0x73, 0x25, 0x30, 0x21, 0x27, 0x25, 0x46, 0x25, 0x39, 0x1B, 0x28, 0x42}, "ISO-2022-JP", "ja", true},
+	} {
+		result, ok := DetectBestCharset(tc.give)
+		xtesting.Equal(t, ok, tc.wantOk)
+		if ok {
+			xtesting.Equal(t, result.Charset, tc.wantCharset)
+			xtesting.Equal(t, result.Language, tc.wantLanguage)
+		}
 
-func TestDetectCharsetAll(t *testing.T) {
-	res, err := DetectCharsetAll([]byte("test"))
-	xtesting.Nil(t, err)
-	xtesting.Equal(t, res[0].Charset, "ISO-8859-1")
+		results, ok := DetectAllCharsets(tc.give)
+		xtesting.Equal(t, ok, tc.wantOk)
+		if ok {
+			xtesting.Equal(t, results[0].Charset, tc.wantCharset)
+			xtesting.Equal(t, results[0].Language, tc.wantLanguage)
+		}
+	}
 }
 
 func TestEncode(t *testing.T) {
@@ -23,9 +53,15 @@ func TestEncode(t *testing.T) {
 	xtesting.Nil(t, err)
 	xtesting.Equal(t, dest, "test")
 
+	dest, err = EncodeString(japanese.ShiftJIS, "测试")
+	xtesting.NotNil(t, err)
+
 	dest2, err := EncodeBytes(unicode.UTF8, []byte("test"))
 	xtesting.Nil(t, err)
 	xtesting.Equal(t, dest2, []byte("test"))
+
+	dest2, err = EncodeBytes(japanese.ShiftJIS, []byte("测试"))
+	xtesting.NotNil(t, err)
 }
 
 func TestDecode(t *testing.T) {
@@ -38,61 +74,44 @@ func TestDecode(t *testing.T) {
 	xtesting.Equal(t, dest2, []byte("test"))
 }
 
-func TestTrimBom(t *testing.T) {
-	src := "\xef\xbb\xbftest"
-	dest := TrimBomString(src)
-	xtesting.Equal(t, dest, "test")
-
-	src = "\xef\xbf\xbetest"
-	dest = TrimBomString(src)
-	xtesting.Equal(t, dest, "test")
-
-	src2 := []byte("\xef\xbb\xbftest")
-	dest2 := TrimBomBytes(src2)
-	xtesting.Equal(t, dest2, []byte("test"))
-
-	src2 = []byte("\xef\xbf\xbetest")
-	dest2 = TrimBomBytes(src2)
-	xtesting.Equal(t, dest2, []byte("test"))
-}
-
 func TestGetEncoding(t *testing.T) {
-	_, ok := GetEncoding(IANA_UTF8)
-	xtesting.True(t, ok)
-	_, ok = GetEncoding(IANA_UTF16BE)
-	xtesting.True(t, ok)
-	_, ok = GetEncoding(IANA_UTF16LE)
-	xtesting.True(t, ok)
-	_, ok = GetEncoding(IANA_UTF32BE)
-	xtesting.True(t, ok)
-	_, ok = GetEncoding(IANA_UTF32LE)
-	xtesting.True(t, ok)
-
-	_, ok = GetEncoding(IANA_SHIFTJIS)
-	xtesting.True(t, ok)
-	_, ok = GetEncoding(IANA_EUCJP)
-	xtesting.True(t, ok)
-	_, ok = GetEncoding(IANA_ISO2022JP)
-	xtesting.True(t, ok)
-	_, ok = GetEncoding(IANA_GB18030)
-	xtesting.True(t, ok)
-	_, ok = GetEncoding(IANA_BIG5)
-	xtesting.True(t, ok)
-	_, ok = GetEncoding(IANA_ISO2022CN)
-	xtesting.False(t, ok)
-	_, ok = GetEncoding(IANA_EUCKR)
-	xtesting.True(t, ok)
-	_, ok = GetEncoding(IANA_ISO2022KR)
-	xtesting.False(t, ok)
-
-	for _, name := range []string{
-		IANA_ISO88591, IANA_ISO88595, IANA_ISO88596, IANA_ISO88597, IANA_ISO88598, IANA_ISO88598I, IANA_ISO88599,
-		IANA_WINDOWS1251, IANA_WINDOWS1256, IANA_KOI8R, IANA_IBM424RTL, IANA_IBM424LTR,
+	for _, tc := range []struct {
+		give   string
+		wantOk bool
+	}{
+		{"", false},
+		{IANA_UTF8, true},
+		{IANA_UTF16BE, true},
+		{IANA_UTF16LE, true},
+		{IANA_UTF32BE, true},
+		{IANA_UTF32LE, true},
+		{IANA_ISO8859_1, true},
+		{IANA_ISO8859_2, true},
+		{IANA_ISO8859_5, true},
+		{IANA_ISO8859_6, true},
+		{IANA_ISO8859_7, true},
+		{IANA_ISO8859_8, true},
+		{IANA_ISO8859_8I, true},
+		{IANA_ISO8859_9, true},
+		{IANA_KOI8R, true},
+		{IANA_KOI8U, true},
+		{IANA_WINDOWS1251, true},
+		{IANA_WINDOWS1256, true},
+		{IANA_IBM424RTL, false},
+		{IANA_IBM424LTR, false},
+		{IANA_IBM420RTL, false},
+		{IANA_IBM420LTR, false},
+		{IANA_SHIFTJIS, true},
+		{IANA_GBK, true},
+		{IANA_GB18030, true},
+		{IANA_BIG5, true},
+		{IANA_EUCJP, true},
+		{IANA_EUCKR, true},
+		{IANA_ISO2022JP, true},
+		{IANA_ISO2022KR, false},
+		{IANA_ISO2022CN, false},
 	} {
-		_, ok := GetEncoding(name)
-		xtesting.False(t, ok)
+		_, ok := GetEncoding(tc.give)
+		xtesting.Equal(t, ok, tc.wantOk)
 	}
-
-	_, ok = GetEncoding("")
-	xtesting.False(t, ok)
 }

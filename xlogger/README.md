@@ -1,10 +1,27 @@
 # xlogger
 
-### Dependencies
+## Dependencies
+
++ None
+
+## Documents
+
+### Types
+
++ `type StdLogger interface`
+
+### Variables
+
++ `var Std *logger.Logger`
+
+### Constants
 
 + None
 
 ### Functions
 
-+ `var StdLogger *log.Logger`
-+ `type IStdLogger interface {}`
++ None
+
+### Methods
+
++ None

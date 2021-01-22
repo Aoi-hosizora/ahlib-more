@@ -6,7 +6,7 @@
 [![License](http://img.shields.io/badge/license-mit-blue.svg)](./LICENSE)
 [![Release](https://img.shields.io/github/v/release/Aoi-hosizora/ahlib-more)](https://github.com/Aoi-hosizora/ahlib-more/releases)
 
-+ Some useful golang functions library for personal use, using some small libraries. Split from [Aoi-hosizora/ahlib](https://github.com/Aoi-hosizora/ahlib).
++ A personal golang library with some small libraries, basic library see [Aoi-hosizora/ahlib](https://github.com/Aoi-hosizora/ahlib).
 
 ### Related libraries
 
@@ -17,15 +17,15 @@
 
 ### Packages
 
-+ xlogger (waiting for refactoring)
-+ xlogrus (waiting for refactoring)
-+ xjwt (waiting for refactoring)
++ xcharset
 + xcrypto (waiting for refactoring)
-+ xcharset (waiting for refactoring)
++ xjwt (waiting for refactoring)
++ xlogger
++ xlogrus (waiting for refactoring)
 + xregexp
 + xvalidator (waiting for refactoring)
 
-### Dependency
+### Dependencies
 
 + See [go.mod](./go.mod) and [go.sum](./go.sum)
 + `github.com/Aoi-hosizora/ahlib v1.4.3`

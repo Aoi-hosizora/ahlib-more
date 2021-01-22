@@ -2,71 +2,66 @@ package xcharset
 
 import (
 	"github.com/saintfish/chardet"
-	"golang.org/x/text/encoding"
-	"golang.org/x/text/transform"
 )
 
-// DetectResult contains all the information that charset detector gives.
+// DetectResult contains the information for charset detector. See chardet.Result.
 type DetectResult struct {
-	// IANA name of the detected charset.
+	// Charset represents IANA or MIME name of the detected charset.
 	Charset string
 
-	// IANA name of the detected language. It may be empty for some charsets.
+	// Language represents IANA name of the detected language. It may be empty for some charsets.
 	Language string
 
-	// The confidence of the result. Scale from 1 to 100.
+	// Confidence represents the confidence of the result. Scale from 1 to 100.
 	Confidence int
 }
 
-// newDetectResultFromChardet builds a DetectResult from chardet.Result.
-func newDetectResultFromChardet(r *chardet.Result) *DetectResult {
-	return &DetectResult{
-		Charset:    r.Charset,
-		Language:   r.Language,
-		Confidence: r.Confidence,
+// DetectBestCharset detects bytes and returns the charset result with highest confidence.
+func DetectBestCharset(bs []byte) (*DetectResult, bool) {
+	detector := chardet.NewTextDetector()
+	result, err := detector.DetectBest(bs)
+	if err != nil {
+		return nil, false // empty result
 	}
+
+	return newDetectResultFromChardet(result), true
 }
 
-// DetectCharsetBest returns the Result with highest Confidence.
-func DetectCharsetBest(bs []byte) (*DetectResult, error) {
+// DetectAllCharsets detects bytes and returns all charsets in confidence's descending order.
+func DetectAllCharsets(bs []byte) ([]*DetectResult, bool) {
 	detector := chardet.NewTextDetector()
-	result, _ := detector.DetectBest(bs)
-
-	return newDetectResultFromChardet(result), nil
-}
-
-// DetectCharsetBest returns all Results which have non-zero Confidence. The Results are sorted by Confidence in descending order.
-func DetectCharsetAll(bs []byte) ([]*DetectResult, error) {
-	detector := chardet.NewTextDetector()
-	results, _ := detector.DetectAll(bs)
+	results, err := detector.DetectAll(bs)
+	if err != nil {
+		return nil, false // empty result
+	}
 
 	out := make([]*DetectResult, len(results))
 	for idx := range results {
 		out[idx] = newDetectResultFromChardet(&results[idx])
 	}
-	return out, nil
+	return out, true
 }
 
-// EncodeString encodes a string in a specific encoding.
-func EncodeString(encode encoding.Encoding, src string) (string, error) {
-	dest, _, err := transform.String(encode.NewEncoder(), src)
-	return dest, err
-}
+// newDetectResultFromChardet creates a DetectResult from chardet.Result.
+func newDetectResultFromChardet(r *chardet.Result) *DetectResult {
+	charset := r.Charset
+	language := r.Language
 
-// DecodeString decodes a string in a specific encoding.
-func DecodeString(encode encoding.Encoding, src string) (string, error) {
-	dest, _, err := transform.String(encode.NewDecoder(), src)
-	return dest, err
-}
+	switch charset {
+	// case "ISO-8859-1":
+	// 	switch language {
+	// 	case "cs", "hu", "pl", "ro":
+	// 		charset = "ISO-8859-2"
+	// 	}
+	case "GB-18030":
+		charset = "GB18030"
+	case "ISO-2022-JP":
+		language = "ja"
+	// case "ISO-2022-KR":
+	// 	language = "ko"
+	// case "ISO-2022-CN":
+	// 	language = "cn"
+	}
 
-// EncodeBytes encodes a bytes in a specific encoding.
-func EncodeBytes(encode encoding.Encoding, src []byte) ([]byte, error) {
-	dest, _, err := transform.Bytes(encode.NewEncoder(), src)
-	return dest, err
-}
-
-// DecodeBytes decodes a bytes in a specific encoding.
-func DecodeBytes(encode encoding.Encoding, src []byte) ([]byte, error) {
-	dest, _, err := transform.Bytes(encode.NewDecoder(), src)
-	return dest, err
+	return &DetectResult{Charset: charset, Language: language, Confidence: r.Confidence}
 }
