@@ -1,96 +1,176 @@
 package xjwt
 
 import (
-	"fmt"
+	"errors"
 	"github.com/Aoi-hosizora/ahlib/xtesting"
 	"github.com/dgrijalva/jwt-go"
 	"testing"
 	"time"
 )
 
-func TestError(t *testing.T) {
-	xtesting.Equal(t, DefaultValidationError.Error(), "token is invalid")
-	xtesting.Equal(t, DefaultValidationError.Errors, jwt.ValidationErrorClaimsInvalid)
-
-	xtesting.False(t, CheckFlagError(nil, jwt.ValidationErrorExpired))
-	xtesting.False(t, CheckFlagError(fmt.Errorf("other error"), jwt.ValidationErrorExpired))
-	xtesting.False(t, CheckFlagError(DefaultValidationError, jwt.ValidationErrorExpired))
-	xtesting.True(t, CheckFlagError(DefaultValidationError, jwt.ValidationErrorClaimsInvalid))
-
-	xtesting.True(t, TokenExpired(jwt.NewValidationError("", jwt.ValidationErrorExpired)))
-	xtesting.False(t, TokenExpired(DefaultValidationError))
-
-	xtesting.True(t, TokenNotIssued(jwt.NewValidationError("", jwt.ValidationErrorIssuedAt)))
-	xtesting.False(t, TokenNotIssued(DefaultValidationError))
-
-	xtesting.True(t, TokenIssuerInvalid(jwt.NewValidationError("", jwt.ValidationErrorIssuer)))
-	xtesting.False(t, TokenIssuerInvalid(DefaultValidationError))
-
-	xtesting.True(t, TokenNotValidYet(jwt.NewValidationError("", jwt.ValidationErrorNotValidYet)))
-	xtesting.False(t, TokenNotValidYet(DefaultValidationError))
-
-	xtesting.True(t, TokenClaimsInvalid(DefaultValidationError))
-	xtesting.False(t, TokenClaimsInvalid(jwt.NewValidationError("", jwt.ValidationErrorNotValidYet)))
-}
-
-type fakeMethod struct{}
-
-func (f fakeMethod) Verify(string, string, interface{}) error {
-	return nil
-}
-
-func (f fakeMethod) Sign(string, interface{}) (string, error) {
-	return "", fmt.Errorf("fake error")
-}
-
-func (f fakeMethod) Alg() string {
-	return ""
-}
-
 func TestGenerateToken(t *testing.T) {
-	fake := &fakeMethod{}
-	_, err := GenerateTokenWithMethod(fake, &jwt.StandardClaims{}, []byte{})
-	xtesting.NotNil(t, err)
-
-	_, err = GenerateToken(&jwt.StandardClaims{}, []byte{})
-	xtesting.Nil(t, err)
-}
-
-func TestToken(t *testing.T) {
-	secret := []byte("A!B@C#D$E%F^G&")
-	type userClaims struct {
-		Uid uint64
-		jwt.StandardClaims
+	for _, tc := range []struct {
+		giveMethod jwt.SigningMethod
+		wantSecret interface{}
+		wantError  bool
+	}{
+		{jwt.SigningMethodNone, []byte{}, true},
+		{jwt.SigningMethodHS256, []byte{}, false},
+		{jwt.SigningMethodHS384, []byte{}, false},
+		{jwt.SigningMethodHS512, []byte{}, false},
+		{jwt.SigningMethodES256, []byte{}, true},
+		{jwt.SigningMethodES384, []byte{}, true},
+		{jwt.SigningMethodES512, []byte{}, true},
+	} {
+		_, err := GenerateToken(tc.giveMethod, &jwt.StandardClaims{}, tc.wantSecret)
+		if tc.wantError {
+			xtesting.NotNil(t, err)
+		} else {
+			xtesting.Nil(t, err)
+		}
 	}
 
+	for _, tc := range []struct {
+		giveFn     func(jwt.Claims, []byte) (string, error)
+		giveSecret []byte
+		wantError  bool
+	}{
+		{GenerateTokenWithHS256, []byte{}, false},
+		{GenerateTokenWithHS256, []byte{'#'}, false},
+		{GenerateTokenWithHS384, []byte{}, false},
+		{GenerateTokenWithHS384, []byte{'#'}, false},
+		{GenerateTokenWithHS512, []byte{}, false},
+		{GenerateTokenWithHS512, []byte{'#'}, false},
+	} {
+		token, err := tc.giveFn(&jwt.StandardClaims{}, tc.giveSecret)
+		if tc.wantError {
+			xtesting.NotNil(t, err)
+		} else {
+			xtesting.Nil(t, err)
+			xtesting.NotEmpty(t, token)
+		}
+	}
+}
+
+func TestParseToken(t *testing.T) {
+	secret := []byte("A!B@C#D$E%F^G&")
+	type userClaims struct {
+		Uid      uint64
+		Username string
+		jwt.StandardClaims
+	}
+	uid := uint64(20)
+	username := "test user"
 	now := time.Now()
-	token, err := GenerateToken(&userClaims{
-		Uid: 1,
+
+	claims := &userClaims{
+		Uid:      uid,
+		Username: username,
 		StandardClaims: jwt.StandardClaims{
+			Issuer:    username,
+			IssuedAt:  now.Unix(),
+			NotBefore: now.Add(time.Second).Unix(),
 			ExpiresAt: now.Add(2 * time.Second).Unix(),
-			IssuedAt:  now.Add(1 * time.Second).Unix(),
 		},
-	}, secret)
+	}
+	// | now | +1s | +2s | +3s |
+	// |-----|-----------|-----|
+	//   NBF       OK      EXP
+	token, err := GenerateTokenWithHS256(claims, secret)
 	xtesting.Nil(t, err)
 
-	// not issued
+	// 1. NBF
 	_, err = ParseToken(token, secret, &userClaims{})
 	xtesting.NotNil(t, err)
-	xtesting.True(t, TokenNotIssued(err))
-	xtesting.False(t, TokenExpired(err))
+	xtesting.True(t, IsNotValidYetError(err))
 
-	// issued
-	time.Sleep(1100 * time.Millisecond)
-	claims, err := ParseToken(token, secret, &userClaims{})
-	cl, ok := claims.(*userClaims)
-	xtesting.True(t, ok)
-	xtesting.Equal(t, cl.ExpiresAt-now.Unix(), int64(2))
-	xtesting.Equal(t, cl.IssuedAt-now.Unix(), int64(1))
+	_, err = ParseTokenClaims(token, secret, &userClaims{})
+	xtesting.NotNil(t, err)
+	xtesting.True(t, IsNotValidYetError(err))
 
-	// expired
-	time.Sleep(2000 * time.Millisecond)
+	// 2. Valid
+	time.Sleep(time.Second)
+	parsedToken, err := ParseToken(token, secret, &userClaims{})
+	xtesting.Nil(t, err)
+	xtesting.Equal(t, parsedToken.Claims.(*userClaims).Uid, uid)
+	xtesting.Equal(t, parsedToken.Claims.(*userClaims).Username, username)
+	xtesting.Equal(t, parsedToken.Claims.(*userClaims).Issuer, username)
+	xtesting.Equal(t, parsedToken.Claims.(*userClaims).IssuedAt, now.Unix())
+
+	parsedClaims, err := ParseTokenClaims(token, secret, &userClaims{})
+	xtesting.Nil(t, err)
+	xtesting.Equal(t, parsedClaims.(*userClaims).Uid, uid)
+	xtesting.Equal(t, parsedClaims.(*userClaims).Username, username)
+	xtesting.Equal(t, parsedClaims.(*userClaims).Issuer, username)
+	xtesting.Equal(t, parsedClaims.(*userClaims).IssuedAt, now.Unix())
+
+	// 3. EXP
+	time.Sleep(2 * time.Second)
 	_, err = ParseToken(token, secret, &userClaims{})
 	xtesting.NotNil(t, err)
-	xtesting.False(t, TokenNotIssued(err))
-	xtesting.True(t, TokenExpired(err))
+	xtesting.True(t, IsExpiredError(err))
+
+	_, err = ParseTokenClaims(token, secret, &userClaims{})
+	xtesting.NotNil(t, err)
+	xtesting.True(t, IsExpiredError(err))
+}
+
+func TestValidationError(t *testing.T) {
+	for _, tc := range []struct {
+		giveFn  func(error) bool
+		giveErr error
+		want    bool
+	}{
+		{IsAudienceError, nil, false},
+		{IsAudienceError, errors.New(""), false},
+		{IsAudienceError, jwt.NewValidationError("", jwt.ValidationErrorMalformed), false},
+		{IsAudienceError, jwt.NewValidationError("", jwt.ValidationErrorAudience), true},
+		{IsAudienceError, jwt.NewValidationError("", jwt.ValidationErrorAudience|jwt.ValidationErrorMalformed), true},
+
+		{IsExpiredError, nil, false},
+		{IsExpiredError, errors.New(""), false},
+		{IsExpiredError, jwt.NewValidationError("", jwt.ValidationErrorMalformed), false},
+		{IsExpiredError, jwt.NewValidationError("", jwt.ValidationErrorExpired), true},
+		{IsExpiredError, jwt.NewValidationError("", jwt.ValidationErrorExpired|jwt.ValidationErrorMalformed), true},
+
+		{IsIdError, nil, false},
+		{IsIdError, errors.New(""), false},
+		{IsIdError, jwt.NewValidationError("", jwt.ValidationErrorMalformed), false},
+		{IsIdError, jwt.NewValidationError("", jwt.ValidationErrorId), true},
+		{IsIdError, jwt.NewValidationError("", jwt.ValidationErrorId|jwt.ValidationErrorMalformed), true},
+
+		{IsIssuedAtError, nil, false},
+		{IsIssuedAtError, errors.New(""), false},
+		{IsIssuedAtError, jwt.NewValidationError("", jwt.ValidationErrorMalformed), false},
+		{IsIssuedAtError, jwt.NewValidationError("", jwt.ValidationErrorIssuedAt), true},
+		{IsIssuedAtError, jwt.NewValidationError("", jwt.ValidationErrorIssuedAt|jwt.ValidationErrorMalformed), true},
+
+		{IsIssuerError, nil, false},
+		{IsIssuerError, errors.New(""), false},
+		{IsIssuerError, jwt.NewValidationError("", jwt.ValidationErrorMalformed), false},
+		{IsIssuerError, jwt.NewValidationError("", jwt.ValidationErrorIssuer), true},
+		{IsIssuerError, jwt.NewValidationError("", jwt.ValidationErrorIssuer|jwt.ValidationErrorMalformed), true},
+
+		{IsNotValidYetError, nil, false},
+		{IsNotValidYetError, errors.New(""), false},
+		{IsNotValidYetError, jwt.NewValidationError("", jwt.ValidationErrorMalformed), false},
+		{IsNotValidYetError, jwt.NewValidationError("", jwt.ValidationErrorNotValidYet), true},
+		{IsNotValidYetError, jwt.NewValidationError("", jwt.ValidationErrorNotValidYet|jwt.ValidationErrorMalformed), true},
+
+		{IsTokenInvalidError, nil, false},
+		{IsTokenInvalidError, errors.New(""), false},
+		{IsTokenInvalidError, jwt.NewValidationError("", jwt.ValidationErrorClaimsInvalid), false},
+		{IsTokenInvalidError, jwt.NewValidationError("", jwt.ValidationErrorMalformed), true},
+		{IsTokenInvalidError, jwt.NewValidationError("", jwt.ValidationErrorUnverifiable), true},
+		{IsTokenInvalidError, jwt.NewValidationError("", jwt.ValidationErrorSignatureInvalid), true},
+		{IsTokenInvalidError, jwt.NewValidationError("", jwt.ValidationErrorMalformed|jwt.ValidationErrorClaimsInvalid), true},
+
+		{IsClaimsInvalidError, nil, false},
+		{IsClaimsInvalidError, errors.New(""), false},
+		{IsClaimsInvalidError, jwt.NewValidationError("", jwt.ValidationErrorMalformed), false},
+		{IsClaimsInvalidError, jwt.NewValidationError("", jwt.ValidationErrorClaimsInvalid), true},
+		{IsClaimsInvalidError, jwt.NewValidationError("", jwt.ValidationErrorClaimsInvalid|jwt.ValidationErrorMalformed), true},
+	} {
+		xtesting.Equal(t, tc.giveFn(tc.giveErr), tc.want)
+	}
 }

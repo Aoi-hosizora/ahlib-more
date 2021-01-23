@@ -18,8 +18,8 @@
 ### Packages
 
 + xcharset
-+ xcrypto (waiting for refactoring)
-+ xjwt (waiting for refactoring)
++ xcrypto
++ xjwt
 + xlogger
 + xlogrus (waiting for refactoring)
 + xregexp

@@ -42,7 +42,7 @@ func DetectAllCharsets(bs []byte) ([]*DetectResult, bool) {
 	return out, true
 }
 
-// newDetectResultFromChardet creates a DetectResult from chardet.Result.
+// newDetectResultFromChardet creates a DetectResult from chardet.Result, note that there are some bugs in chardet package.
 func newDetectResultFromChardet(r *chardet.Result) *DetectResult {
 	charset := r.Charset
 	language := r.Language
@@ -57,10 +57,10 @@ func newDetectResultFromChardet(r *chardet.Result) *DetectResult {
 		charset = "GB18030"
 	case "ISO-2022-JP":
 		language = "ja"
-	// case "ISO-2022-KR":
-	// 	language = "ko"
-	// case "ISO-2022-CN":
-	// 	language = "cn"
+		// case "ISO-2022-KR":
+		// 	language = "ko"
+		// case "ISO-2022-CN":
+		// 	language = "cn"
 	}
 
 	return &DetectResult{Charset: charset, Language: language, Confidence: r.Confidence}

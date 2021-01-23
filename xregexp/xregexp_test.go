@@ -6,5 +6,4 @@ import (
 
 func TestRegexp(t *testing.T) {
 	// dummy
-	_ = nil
 }
