@@ -1,35 +1,72 @@
 # xvalidator
 
+## Dependencies
+
++ github.com/go-playground/locales
++ github.com/go-playground/universal-translator
++ github.com/go-playground/validator/v10
++ xnumber
++ xreflect
++ xtesting*
+
+## Documents
+
+### Types
+
++ `type TranslationRegisterHandler func`
+
+### Variables
+
++ None
+
+### Constants
+
++ None
+
 ### Functions
 
-+ `ValidationRequiredError(err error) bool`
-+ `And(fns ...validator.Func) validator.Func`
-+ `Or(fns ...validator.Func) validator.Func`
-+ `DefaultRegexpValidator() validator.Func`
-+ `RegexpValidator(re *regexp.Regexp) validator.Func`
-+ `DateTimeValidator(layout string) validator.Func`
-+ `EqualValidator(p interface{}) validator.Func`
-+ `NotEqualValidator(p interface{}) validator.Func`
-+ `LenValidator(p interface{}) validator.Func`
-+ `GreaterThenValidator(p interface{}) validator.Func`
-+ `LessThenValidator(p interface{}) validator.Func`
-+ `GreaterThenOrEqualValidator(p interface{}) validator.Func`
-+ `LessThenOrEqualValidator(p interface{}) validator.Func`
-+ `LengthRangeValidator(min, max interface{}) validator.Func`
-+ `LengthOutOfRangeValidator(min, max interface{}) validator.Func`
-+ `OneofValidator(ps ...interface{}) validator.Func`
-+ `type DefaultTranslationFunc func(v *validator.Validate, trans ut.Translator) error`
-+ `GetTranslator(validator *validator.Validate, loc locales.Translator, translatorFunc DefaultTranslationFunc) (ut.Translator, error)`
-+ `ValidatorRegisterTranslationsFunc(tag string, translation string, override bool) validator.RegisterTranslationsFunc`
-+ `ValidatorTranslationFunc() validator.TranslationFunc`
-+ `ValidatorTranslationParamFunc() validator.TranslationFunc`
-+ `EnValidatorTranslation() DefaultTranslationFunc`
-+ `FrValidatorTranslation() DefaultTranslationFunc`
-+ `IdValidatorTranslation() DefaultTranslationFunc`
-+ `JaValidatorTranslation() DefaultTranslationFunc`
-+ `NlValidatorTranslation() DefaultTranslationFunc`
-+ `PtBrValidatorTranslation() DefaultTranslationFunc`
-+ `RuValidatorTranslation() DefaultTranslationFunc`
-+ `TrValidatorTranslation() DefaultTranslationFunc`
-+ `ZhValidatorTranslation() DefaultTranslationFunc`
-+ `ZhTwValidatorTranslation() DefaultTranslationFunc`
++ `func IsRequiredError(err error) bool`
++ `func DefaultRegexpValidator() validator.Func`
++ `func RegexpValidator(re *regexp.Regexp) validator.Func`
++ `func DateTimeValidator(layout string) validator.Func`
++ `func And(fns ...validator.Func) validator.Func`
++ `func Or(fns ...validator.Func) validator.Func`
++ `func EqualValidator(p interface{}) validator.Func`
++ `func NotEqualValidator(p interface{}) validator.Func`
++ `func LenValidator(p interface{}) validator.Func`
++ `func GreaterThenValidator(p interface{}) validator.Func`
++ `func LessThenValidator(p interface{}) validator.Func`
++ `func GreaterThenOrEqualValidator(p interface{}) validator.Func`
++ `func LessThenOrEqualValidator(p interface{}) validator.Func`
++ `func LengthInRangeValidator(min, max interface{}) validator.Func`
++ `func LengthOutOfRangeValidator(min, max interface{}) validator.Func`
++ `func OneofValidator(ps ...interface{}) validator.Func`
++ `func ApplyTranslationToValidator(validator *validator.Validate, loc locales.Translator, registerFn TranslationRegisterHandler) (ut.Translator, error)`
++ `func RegisterTranslationFunc(tag string, translation string, override bool) validator.RegisterTranslationsFunc`
++ `func DefaultTranslationFunc() validator.TranslationFunc`
++ `func EnLocaleTranslator() locales.Translator`
++ `func EnLocaleTranslator() locales.Translator`
++ `func FrLocaleTranslator() locales.Translator`
++ `func IdLocaleTranslator() locales.Translator`
++ `func JaLocaleTranslator() locales.Translator`
++ `func NlLocaleTranslator() locales.Translator`
++ `func PtBrLocaleTranslator() locales.Translator`
++ `func RuLocaleTranslator() locales.Translator`
++ `func TrLocaleTranslator() locales.Translator`
++ `func ZhLocaleTranslator() locales.Translator`
++ `func ZhHantLocaleTranslator() locales.Translator`
++ `func DefaultTranslationRegisterFunc() TranslationRegisterHandler`
++ `func EnTranslationRegisterFunc() TranslationRegisterHandler`
++ `func FrTranslationRegisterFunc() TranslationRegisterHandler`
++ `func IdTranslationRegisterFunc() TranslationRegisterHandler`
++ `func JaTranslationRegisterFunc() TranslationRegisterHandler`
++ `func NlTranslationRegisterFunc() TranslationRegisterHandler`
++ `func PtBrTranslationRegisterFunc() TranslationRegisterHandler`
++ `func RuTranslationRegisterFunc() TranslationRegisterHandler`
++ `func TrTranslationRegisterFunc() TranslationRegisterHandler`
++ `func ZhTranslationRegisterFunc() TranslationRegisterHandler`
++ `func ZhTwTranslationRegisterFunc() TranslationRegisterHandler`
+
+### Methods
+
++ None

@@ -23,7 +23,7 @@
 + xlogger
 + xlogrus (waiting for refactoring)
 + xregexp
-+ xvalidator (waiting for refactoring)
++ xvalidator
 
 ### Dependencies
 
