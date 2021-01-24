@@ -9,7 +9,6 @@ import (
 	"encoding/base32"
 	"encoding/base64"
 	"encoding/hex"
-	"errors"
 	"github.com/Aoi-hosizora/ahlib/xstring"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/crypto/md4"
@@ -288,7 +287,7 @@ func BcryptEncryptWithDefaultCost(password []byte) ([]byte, error) {
 func BcryptCompare(password, encrypted []byte) (ok bool, err error) {
 	err = bcrypt.CompareHashAndPassword(encrypted, password) // x/crypto/bcrypt
 	if err != nil {
-		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+		if err == bcrypt.ErrMismatchedHashAndPassword {
 			return false, nil
 		}
 		return false, err

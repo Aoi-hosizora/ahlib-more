@@ -5,8 +5,6 @@
 + github.com/go-playground/locales
 + github.com/go-playground/universal-translator
 + github.com/go-playground/validator/v10
-+ xnumber
-+ xreflect
 + xtesting*
 
 ## Documents

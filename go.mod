@@ -6,6 +6,7 @@ require (
 	github.com/Aoi-hosizora/ahlib v1.5.0
 	github.com/ah-forklib/lumberjack v0.0.0-20201027021347-0dae85f5680a
 	github.com/ah-forklib/rotatelogs v0.0.0-20201027030445-0980b2e1e9b3
+	github.com/ah-forklib/strftime v0.0.0-20201027030051-f6e1a7ff7457
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-playground/locales v0.13.0
 	github.com/go-playground/universal-translator v0.17.0

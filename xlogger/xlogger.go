@@ -10,7 +10,7 @@ var Std = log.New(os.Stderr, "", log.LstdFlags)
 
 var _ StdLogger = (*log.Logger)(nil)
 
-// StdLogger describes how log.Logger works like, include Print, Panic, Fatal series methods.
+// StdLogger describes how log.Logger works like, includes Print, Panic, Fatal series methods.
 type StdLogger interface {
 	Print(...interface{})
 	Printf(string, ...interface{})
