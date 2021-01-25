@@ -28,8 +28,8 @@ func IsRequiredError(err error) bool {
 // regexp & datetime
 // =================
 
-// DefaultRegexpValidator represents regexp validator with param, just like `regexp: xxx`.
-func DefaultRegexpValidator() validator.Func {
+// ParamRegexpValidator represents regexp validator with param, just like `regexp: xxx`.
+func ParamRegexpValidator() validator.Func {
 	return func(fl validator.FieldLevel) bool {
 		regexpParam := fl.Param() // param
 		i := fl.Field().Interface()

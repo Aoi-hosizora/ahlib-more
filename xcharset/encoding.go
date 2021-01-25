@@ -53,7 +53,6 @@ const (
 	IANA_ISO8859_8I  = "ISO-8859-8-I" // he
 	IANA_ISO8859_9   = "ISO-8859-9"   // tr
 	IANA_KOI8R       = "KOI8-R"       // ru
-	IANA_KOI8U       = "KOI8-U"       // uk
 	IANA_WINDOWS1251 = "windows-1251" // ar
 	IANA_WINDOWS1256 = "windows-1256" // ar
 	IANA_IBM424RTL   = "IBM424_rtl"   // he
@@ -106,8 +105,6 @@ func GetEncoding(iana string) (encode encoding.Encoding, exist bool) {
 		return charmap.ISO8859_9, true
 	case IANA_KOI8R:
 		return charmap.KOI8R, true
-	case IANA_KOI8U:
-		return charmap.KOI8U, true
 	case IANA_WINDOWS1251:
 		return charmap.Windows1251, true
 	case IANA_WINDOWS1256:

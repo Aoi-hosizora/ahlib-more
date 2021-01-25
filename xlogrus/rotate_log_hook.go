@@ -12,23 +12,31 @@ import (
 type RotateLogConfig struct {
 	// Filename represents the log filename without time part and extension, required.
 	Filename string
+
 	// FilenameTimePart represents time part after filename, defaults to ".%Y%m%d.log". See strftime.New.
 	FilenameTimePart string
+
 	// LinkFileName represents the symbolic link filename, defaults to "", no link will be written.
 	LinkFileName string
+
 	// Level represents the lowest log level, defaults to logrus.PanicLevel.
 	Level logrus.Level
+
 	// Formatter represents the logger formatter, defaults to logrus.JSONFormatter.
 	Formatter logrus.Formatter
 
 	// MaxAge represents the max duration of the file, defaults to one week.
 	MaxAge time.Duration
+
 	// MaxSize represents the max size in MB of the file, defaults to no limit.
 	MaxSize int
+
 	// RotationTime represents the rotation duration of the file, defaults to one day.
 	RotationTime time.Duration
+
 	// LocalTime represents the switcher for local or UTC time, defaults to use UTC time.
 	LocalTime bool
+
 	// ForceNewFile represents the switcher for forcing to save to new file, defaults to false.
 	ForceNewFile bool
 }
@@ -47,6 +55,20 @@ const (
 )
 
 // NewRotateLogHook creates a RotateLogHook as logrus.Hook with RotateLogConfig.
+// Example:
+// 	hook := NewRotateLogHook(&RotateLogConfig{
+// 		Filename:         "console",
+// 		FilenameTimePart: ".%Y%m%d.log",
+// 		LinkFileName:     "console.curr.log",
+// 		Level:            logrus.WarnLevel,
+// 		Formatter:        &logrus.JSONFormatter{TimestampFormat: time.RFC3339},
+// 		MaxAge:           time.Hour * 24 * 30,
+// 		MaxSize:          100,
+// 		RotationTime:     time.Hour * 24,
+// 		LocalTime:        false,
+// 		ForceNewFile:     false,
+// 	})
+// 	logger.AddHook(hook)
 func NewRotateLogHook(config *RotateLogConfig) logrus.Hook {
 	if config == nil {
 		panic(panicNilConfig)
@@ -95,6 +117,7 @@ func (r *RotateLogHook) Levels() []logrus.Level {
 	return logrus.AllLevels[:r.config.Level+1]
 }
 
+// Fire writes logrus.Entry data to io.Writer, this implements logrus.Hook.
 func (r *RotateLogHook) Fire(entry *logrus.Entry) error {
 	b, _ := r.config.Formatter.Format(entry) // ignore error
 	_, _ = r.writer.Write(b)

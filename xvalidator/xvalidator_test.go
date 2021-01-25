@@ -32,7 +32,7 @@ func TestIsRequiredError(t *testing.T) {
 
 func TestRegexpAndDateTimeValidator(t *testing.T) {
 	val := validator.New()
-	_ = val.RegisterValidation("regexp", DefaultRegexpValidator())
+	_ = val.RegisterValidation("regexp", ParamRegexpValidator())
 	_ = val.RegisterValidation("abc", RegexpValidator(regexp.MustCompile(`^[abc].+$`)))
 	_ = val.RegisterValidation("date", DateTimeValidator(xtime.RFC3339Date))
 	_ = val.RegisterValidation("datetime", DateTimeValidator(xtime.RFC3339DateTime))
@@ -99,10 +99,10 @@ func TestAndOr(t *testing.T) {
 
 	xtesting.NotPanic(t, func() { And() })
 	xtesting.Panic(t, func() { And(nil, nil, nil) })
-	xtesting.Panic(t, func() { And(DefaultRegexpValidator(), nil, nil) })
+	xtesting.Panic(t, func() { And(ParamRegexpValidator(), nil, nil) })
 	xtesting.NotPanic(t, func() { Or() })
 	xtesting.Panic(t, func() { Or(nil, nil, nil) })
-	xtesting.Panic(t, func() { Or(DefaultRegexpValidator(), nil, nil) })
+	xtesting.Panic(t, func() { Or(ParamRegexpValidator(), nil, nil) })
 
 	_ = val.RegisterValidation("re", And(RegexpValidator(regexp.MustCompile(`^[abc].+$`)), RegexpValidator(regexp.MustCompile(`^[abc][def].+$`))))
 	_ = val.RegisterValidation("time", Or(DateTimeValidator(xtime.RFC3339Date), DateTimeValidator(xtime.RFC3339DateTime)))

@@ -94,7 +94,6 @@ func TestGetEncoding(t *testing.T) {
 		{IANA_ISO8859_8I, true},
 		{IANA_ISO8859_9, true},
 		{IANA_KOI8R, true},
-		{IANA_KOI8U, true},
 		{IANA_WINDOWS1251, true},
 		{IANA_WINDOWS1256, true},
 		{IANA_IBM424RTL, false},

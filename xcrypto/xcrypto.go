@@ -287,7 +287,7 @@ func BcryptEncryptWithDefaultCost(password []byte) ([]byte, error) {
 func BcryptCompare(password, encrypted []byte) (ok bool, err error) {
 	err = bcrypt.CompareHashAndPassword(encrypted, password) // x/crypto/bcrypt
 	if err != nil {
-		if err == bcrypt.ErrMismatchedHashAndPassword {
+		if err == bcrypt.ErrMismatchedHashAndPassword { // don't use errors.Is
 			return false, nil
 		}
 		return false, err

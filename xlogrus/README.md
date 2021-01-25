@@ -35,3 +35,5 @@
 ### Methods
 
 + `func (s *SimpleFormatter) Format(entry *logrus.Entry) ([]byte, error)`
++ `func (r *RotateFileHook) Fire(entry *logrus.Entry) error`
++ `func (r *RotateLogHook) Fire(entry *logrus.Entry) error`

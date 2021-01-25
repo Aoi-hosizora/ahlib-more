@@ -32,7 +32,6 @@
 + `const IANA_ISO8859_8I string`
 + `const IANA_ISO8859_9 string`
 + `const IANA_KOI8R string`
-+ `const IANA_KOI8U string`
 + `const IANA_WINDOWS1251 string`
 + `const IANA_WINDOWS1256 string`
 + `const IANA_IBM424RTL string`

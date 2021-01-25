@@ -24,7 +24,7 @@
 ### Functions
 
 + `func IsRequiredError(err error) bool`
-+ `func DefaultRegexpValidator() validator.Func`
++ `func ParamRegexpValidator() validator.Func`
 + `func RegexpValidator(re *regexp.Regexp) validator.Func`
 + `func DateTimeValidator(layout string) validator.Func`
 + `func And(fns ...validator.Func) validator.Func`
@@ -39,9 +39,9 @@
 + `func LengthInRangeValidator(min, max interface{}) validator.Func`
 + `func LengthOutOfRangeValidator(min, max interface{}) validator.Func`
 + `func OneofValidator(ps ...interface{}) validator.Func`
-+ `func ApplyTranslationToValidator(validator *validator.Validate, loc locales.Translator, registerFn TranslationRegisterHandler) (ut.Translator, error)`
-+ `func RegisterTranslationFunc(tag string, translation string, override bool) validator.RegisterTranslationsFunc`
-+ `func DefaultTranslationFunc() validator.TranslationFunc`
++ `func ApplyValidatorTranslator(validator *validator.Validate, loc locales.Translator, registerFn TranslationRegisterHandler) (ut.Translator, error)`
++ `func AddToTranslatorFunc(tag string, translation string, override bool) validator.RegisterTranslationsFunc`
++ `func DefaultTranslateFunc() validator.TranslationFunc`
 + `func EnLocaleTranslator() locales.Translator`
 + `func EnLocaleTranslator() locales.Translator`
 + `func FrLocaleTranslator() locales.Translator`
@@ -53,7 +53,6 @@
 + `func TrLocaleTranslator() locales.Translator`
 + `func ZhLocaleTranslator() locales.Translator`
 + `func ZhHantLocaleTranslator() locales.Translator`
-+ `func DefaultTranslationRegisterFunc() TranslationRegisterHandler`
 + `func EnTranslationRegisterFunc() TranslationRegisterHandler`
 + `func FrTranslationRegisterFunc() TranslationRegisterHandler`
 + `func IdTranslationRegisterFunc() TranslationRegisterHandler`

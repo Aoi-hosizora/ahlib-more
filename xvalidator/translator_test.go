@@ -11,7 +11,7 @@ import (
 	"unsafe"
 )
 
-func TestTranslator(t *testing.T) {
+func TestApplyValidatorTranslator(t *testing.T) {
 	v := validator.New()
 	type testStruct struct {
 		String string `validate:"required"`
@@ -28,45 +28,69 @@ func TestTranslator(t *testing.T) {
 		{ZhLocaleTranslator(), ZhTranslationRegisterFunc(), "String为必填字段"},
 		{ZhHantLocaleTranslator(), ZhTwTranslationRegisterFunc(), "String為必填欄位"},
 	} {
-		translator, err := ApplyTranslationToValidator(v, tc.giveTranslator, tc.giveRegisterFn)
+		translator, err := ApplyValidatorTranslator(v, tc.giveTranslator, tc.giveRegisterFn)
 		xtesting.Nil(t, err)
 		err = v.Struct(&testStruct{})
 		xtesting.NotNil(t, err)
 		xtesting.Equal(t, err.(validator.ValidationErrors).Translate(translator)["testStruct.String"], tc.wantRequiredText)
 	}
 
-	xtesting.Panic(t, func() { _, _ = ApplyTranslationToValidator(nil, EnLocaleTranslator(), EnTranslationRegisterFunc()) })
-	xtesting.Panic(t, func() { _, _ = ApplyTranslationToValidator(v, nil, EnTranslationRegisterFunc()) })
-	xtesting.Panic(t, func() { _, _ = ApplyTranslationToValidator(v, EnLocaleTranslator(), nil) })
-	_, err := ApplyTranslationToValidator(v, EnLocaleTranslator(), func(v *validator.Validate, trans ut.Translator) error {
+	xtesting.Panic(t, func() { _, _ = ApplyValidatorTranslator(nil, EnLocaleTranslator(), EnTranslationRegisterFunc()) })
+	xtesting.Panic(t, func() { _, _ = ApplyValidatorTranslator(v, nil, EnTranslationRegisterFunc()) })
+	xtesting.Panic(t, func() { _, _ = ApplyValidatorTranslator(v, EnLocaleTranslator(), nil) })
+	_, err := ApplyValidatorTranslator(v, EnLocaleTranslator(), func(v *validator.Validate, trans ut.Translator) error {
 		return errors.New("test error")
 	})
 	xtesting.NotNil(t, err)
 	xtesting.Equal(t, err.Error(), "test error")
 }
 
-func TestTranslatorRegister(t *testing.T) {
+func TestTranslationRegister(t *testing.T) {
+	// 1. normal
 	val := validator.New()
-	_ = val.RegisterValidation("test_eq", EqualValidator(0))
-	type testStruct struct {
+	type testStruct1 struct {
 		String string `validate:"required"`
-		Int    int    `validate:"test_eq"`
 	}
+	trans, _ := ApplyValidatorTranslator(val, EnLocaleTranslator(), EnTranslationRegisterFunc())
+	fn := AddToTranslatorFunc("required", "required {0}!!!", true)
+	_ = val.RegisterTranslation("required", trans, fn, DefaultTranslateFunc())
 
-	trans, _ := ApplyTranslationToValidator(val, EnLocaleTranslator(), EnTranslationRegisterFunc())
-	fn := RegisterTranslationFunc("required", "required {0}!!!", true)
-	_ = val.RegisterTranslation("required", trans, fn, DefaultTranslationFunc())
-	_ = val.RegisterTranslation("test_eq", trans, fn, DefaultTranslationFunc()) // <<< error
-
-	err := val.Struct(&testStruct{}).(validator.ValidationErrors)
+	err := val.Struct(&testStruct1{}).(validator.ValidationErrors)
 	xtesting.NotNil(t, err)
 	transResults := err.Translate(trans)
-	xtesting.Equal(t, transResults["testStruct.String"], "required String!!!")
+	xtesting.Equal(t, transResults["testStruct1.String"], "required String!!!")
 
-	err = val.Struct(&testStruct{String: "test", Int: 1}).(validator.ValidationErrors)
+	// 2. error with ut.T
+	val = validator.New()
+	_ = val.RegisterValidation("test", EqualValidator("test"))
+	type testStruct2 struct {
+		String string `validate:"test"`
+	}
+	trans, _ = ApplyValidatorTranslator(val, EnLocaleTranslator(), EnTranslationRegisterFunc())
+	fn = AddToTranslatorFunc("no_test", "translator for test tag", true)
+	_ = val.RegisterTranslation("test", trans, fn, DefaultTranslateFunc())
+
+	err = val.Struct(&testStruct2{}).(validator.ValidationErrors)
 	xtesting.NotNil(t, err)
 	transResults = err.Translate(trans)
-	xtesting.Equal(t, transResults["testStruct.Int"], "Key: 'testStruct.Int' Error:Field validation for 'Int' failed on the 'test_eq' tag")
+	xtesting.Equal(t, transResults["testStruct2.String"], "Key: 'testStruct2.String' Error:Field validation for 'String' failed on the 'test' tag")
+
+	// 3. param with no param
+	val = validator.New()
+	_ = val.RegisterValidation("test", EqualValidator("test"))
+	type testStruct3 struct {
+		String1 string `validate:"test"`
+		String2 string `validate:"test=hhh"`
+	}
+	trans, _ = ApplyValidatorTranslator(val, EnLocaleTranslator(), EnTranslationRegisterFunc())
+	fn = AddToTranslatorFunc("test", "{0} <- {1}", true)
+	_ = val.RegisterTranslation("test", trans, fn, DefaultTranslateFunc())
+
+	err = val.Struct(&testStruct3{}).(validator.ValidationErrors)
+	xtesting.NotNil(t, err)
+	transResults = err.Translate(trans)
+	xtesting.Equal(t, transResults["testStruct3.String1"], "String1 <- ")
+	xtesting.Equal(t, transResults["testStruct3.String2"], "String2 <- hhh")
 }
 
 func TestLocaleTranslators(t *testing.T) {
@@ -97,20 +121,18 @@ func TestTranslationRegisterFuncs(t *testing.T) {
 
 	for _, tc := range []struct {
 		giveFn           TranslationRegisterHandler
-		wantFields       bool
 		wantRequiredText string
 	}{
-		{DefaultTranslationRegisterFunc(), false, ""},
-		{EnTranslationRegisterFunc(), true, "{0} is a required field"},
-		{FrTranslationRegisterFunc(), true, "{0} est un champ obligatoire"},
-		{IdTranslationRegisterFunc(), true, "{0} wajib diisi"},
-		{JaTranslationRegisterFunc(), true, "{0}は必須フィールドです"},
-		{NlTranslationRegisterFunc(), true, "{0} is een verplicht veld"},
-		{PtBrTranslationRegisterFunc(), true, "{0} é um campo requerido"},
-		{RuTranslationRegisterFunc(), true, "{0} обязательное поле"},
-		{TrTranslationRegisterFunc(), true, "{0} zorunlu bir alandır"},
-		{ZhTranslationRegisterFunc(), true, "{0}为必填字段"},
-		{ZhTwTranslationRegisterFunc(), true, "{0}為必填欄位"},
+		{EnTranslationRegisterFunc(), "{0} is a required field"},
+		{FrTranslationRegisterFunc(), "{0} est un champ obligatoire"},
+		{IdTranslationRegisterFunc(), "{0} wajib diisi"},
+		{JaTranslationRegisterFunc(), "{0}は必須フィールドです"},
+		{NlTranslationRegisterFunc(), "{0} is een verplicht veld"},
+		{PtBrTranslationRegisterFunc(), "{0} é um campo requerido"},
+		{RuTranslationRegisterFunc(), "{0} обязательное поле"},
+		{TrTranslationRegisterFunc(), "{0} zorunlu bir alandır"},
+		{ZhTranslationRegisterFunc(), "{0}为必填字段"},
+		{ZhTwTranslationRegisterFunc(), "{0}為必填欄位"},
 	} {
 		val := validator.New()
 		uniTrans := ut.New(EnLocaleTranslator(), EnLocaleTranslator())
@@ -120,11 +142,7 @@ func TestTranslationRegisterFuncs(t *testing.T) {
 
 		field := reflect.ValueOf(trans).Elem().FieldByName("translations")
 		fieldValue := reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).Elem()
-		if tc.wantFields {
-			ptr := fieldValue.MapIndex(reflect.ValueOf("required"))
-			xtesting.Equal(t, (*transText)(unsafe.Pointer(ptr.Elem().UnsafeAddr())).text, tc.wantRequiredText)
-		} else {
-			xtesting.Equal(t, fieldValue.Len(), 0)
-		}
+		ptr := fieldValue.MapIndex(reflect.ValueOf("required"))
+		xtesting.Equal(t, (*transText)(unsafe.Pointer(ptr.Elem().UnsafeAddr())).text, tc.wantRequiredText)
 	}
 }

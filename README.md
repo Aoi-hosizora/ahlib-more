@@ -6,7 +6,7 @@
 [![License](http://img.shields.io/badge/license-mit-blue.svg)](./LICENSE)
 [![Release](https://img.shields.io/github/v/release/Aoi-hosizora/ahlib-more)](https://github.com/Aoi-hosizora/ahlib-more/releases)
 
-+ A personal golang library with some small libraries, basic library see [Aoi-hosizora/ahlib](https://github.com/Aoi-hosizora/ahlib).
++ A personal golang library with some small libraries, split from [Aoi-hosizora/ahlib](https://github.com/Aoi-hosizora/ahlib).
 
 ### Related libraries
 
@@ -21,7 +21,7 @@
 + xcrypto
 + xjwt
 + xlogger
-+ xlogrus (waiting for refactoring)
++ xlogrus
 + xregexp
 + xvalidator
 
