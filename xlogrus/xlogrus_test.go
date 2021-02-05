@@ -1,106 +1,128 @@
 package xlogrus
 
 import (
-	"fmt"
+	"github.com/Aoi-hosizora/ahlib/xtesting"
 	"github.com/sirupsen/logrus"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 )
 
-func TestCustomFormatter(t *testing.T) {
+func TestSimpleFormatter(t *testing.T) {
 	l := logrus.New()
 	l.SetLevel(logrus.TraceLevel)
+	sb := &strings.Builder{}
+	l.SetOutput(sb)
 
-	// no caller, with color
-	l.SetReportCaller(false)
-	l.SetFormatter(&CustomFormatter{
-		RuntimeCaller:   nil,
-		TimestampFormat: "",
-	})
-	l.Trace("test")
-	l.Info("test")
+	for _, tc := range []struct {
+		giveFmt      *SimpleFormatter
+		giveReporter bool
+		giveFn       func()
+		want1        string
+		want2        string
+	}{
+		{&SimpleFormatter{}, false,
+			func() { l.Trace("test") }, "\x1b[37mTRAC\x1b[0m [", "] test\n"},
+		{&SimpleFormatter{TimestampFormat: time.RFC3339}, false,
+			func() { l.Error("test") }, "\x1b[31mERRO\x1b[0m [", "] test\n"},
+		{&SimpleFormatter{RuntimeCaller: func(*runtime.Frame) (string, string) { return "", "" }}, true,
+			func() { l.Warn("test") }, "\x1b[33mWARN\x1b[0m [", "] test\n"},
+		{&SimpleFormatter{RuntimeCaller: func(*runtime.Frame) (string, string) { return "fn()", "a.go:1" }}, true,
+			func() { l.Info("test") }, "\x1b[34mINFO\x1b[0m [", "] a.go:1 fn() test\n"},
+		{&SimpleFormatter{DisableColor: true}, false,
+			func() { l.Debug("test") }, "DEBU [", "] test\n"},
+		{&SimpleFormatter{RuntimeCaller: nil, DisableColor: true}, true,
+			func() { l.Debug("test") }, "", ""}, // ignore test
+	} {
+		l.SetFormatter(tc.giveFmt)
+		l.SetReportCaller(tc.giveReporter)
+		sb.Reset()
+		tc.giveFn()
+		output := sb.String()
 
-	// default caller, with color
-	l.SetReportCaller(true)
-	l.SetFormatter(&CustomFormatter{
-		DisableColor:    false,
-		RuntimeCaller:   nil,
-		TimestampFormat: time.RubyDate,
-	})
-	l.Warn("test")
-	l.Error("test")
-
-	// no color, with caller
-	l.SetReportCaller(true)
-	l.SetFormatter(&CustomFormatter{
-		DisableColor:  true,
-		RuntimeCaller: func(*runtime.Frame) (string, string) { return "package.funcname", "filename:1" },
-	})
-	l.Trace("test")
-	l.Info("test")
-	l.Warn("test")
-	l.Error("test")
-}
-
-type fakeFormatter struct{}
-
-func (f *fakeFormatter) Format(*logrus.Entry) ([]byte, error) {
-	return []byte("fake"), fmt.Errorf("fake error")
+		if !tc.giveReporter || tc.giveFmt.RuntimeCaller != nil {
+			len1 := len(tc.want1)
+			len2 := len(tc.want2)
+			xtesting.Equal(t, output[:len1], tc.want1)
+			xtesting.Equal(t, output[len(output)-len2:], tc.want2)
+		}
+	}
 }
 
 func TestRotateFileHook(t *testing.T) {
-	l := logrus.New()
-	l.SetLevel(logrus.TraceLevel)
-	cfg := &RotateFileConfig{
-		Filename:  "./logs/file.log",
-		Level:     logrus.TraceLevel,
+	for _, tc := range []struct {
+		giveCfg   *RotateFileConfig
+		wantPanic bool // only test panic
+	}{
+		{nil, true},
+		{&RotateFileConfig{Filename: ""}, true},
+		{&RotateFileConfig{Filename: "log"}, false},
+		{&RotateFileConfig{Filename: "log", Level: 20}, true},
+		{&RotateFileConfig{Filename: "log", Level: logrus.WarnLevel}, false},
+		{&RotateFileConfig{Filename: "log", Formatter: nil}, false},
+		{&RotateFileConfig{Filename: "log", Formatter: &logrus.JSONFormatter{}}, false},
+	} {
+		if tc.wantPanic {
+			xtesting.Panic(t, func() { NewRotateFileHook(tc.giveCfg) })
+		} else {
+			NewRotateFileHook(tc.giveCfg)
+		}
+	}
+
+	// test fire
+	hook := NewRotateFileHook(&RotateFileConfig{
+		Filename:  "console.log",
+		Level:     logrus.WarnLevel,
 		Formatter: &logrus.JSONFormatter{TimestampFormat: time.RFC3339},
-	}
-	l.AddHook(NewRotateFileHook(cfg))
-	l.SetFormatter(&CustomFormatter{DisableColor: true})
-
-	for i := 0; i < 5; i++ {
-		l.Infof("test at %s", time.Now().Format(time.RFC3339Nano))
-		time.Sleep(time.Millisecond * 100)
-	}
-
-	l = logrus.New()
-	l.SetLevel(logrus.TraceLevel)
-	cfg.Formatter = &fakeFormatter{}
-	l.AddHook(NewRotateFileHook(cfg))
-	l.Error("!!!!!!")
+		MaxAge:    30,
+		MaxSize:   100,
+		LocalTime: false,
+		Compress:  true,
+	})
+	xtesting.Equal(t, hook.Levels(), []logrus.Level{logrus.PanicLevel, logrus.FatalLevel, logrus.ErrorLevel, logrus.WarnLevel})
+	xtesting.Nil(t, hook.Fire(logrus.WithField("key", "value")))
 }
 
 func TestRotateLogHook(t *testing.T) {
-	func() {
-		defer func() { recover() }()
-		_ = NewRotateLogHook(&RotateLogConfig{Filename: "%"})
-	}()
-
-	l := logrus.New()
-	l.SetLevel(logrus.TraceLevel)
-	cfg := &RotateLogConfig{
-		MaxAge:       15 * 24 * time.Hour,
-		RotationTime: 24 * time.Hour,
-		LocalTime:    true,
-		ForceNewFile: true,
-		Filepath:     "./logs/",
-		Filename:     "console",
-		Level:        logrus.TraceLevel,
-		Formatter:    &logrus.JSONFormatter{TimestampFormat: time.RFC3339},
+	for _, tc := range []struct {
+		giveCfg   *RotateLogConfig
+		wantPanic bool // only test panic
+	}{
+		{nil, true},
+		{&RotateLogConfig{Filename: ""}, true},
+		{&RotateLogConfig{Filename: "log"}, false},
+		{&RotateLogConfig{Filename: "log", Level: 20}, true},
+		{&RotateLogConfig{Filename: "log", Level: logrus.WarnLevel}, false},
+		{&RotateLogConfig{Filename: "log", FilenameTimePart: "%"}, true},
+		{&RotateLogConfig{Filename: "log", FilenameTimePart: ".%Y%m%d.log"}, false},
+		{&RotateLogConfig{Filename: "log", LocalTime: true}, false},
+		{&RotateLogConfig{Filename: "log", LocalTime: false}, false},
+		{&RotateLogConfig{Filename: "log", ForceNewFile: true}, false},
+		{&RotateLogConfig{Filename: "log", ForceNewFile: false}, false},
+		{&RotateLogConfig{Filename: "log", Formatter: nil}, false},
+		{&RotateLogConfig{Filename: "log", Formatter: &logrus.JSONFormatter{}}, false},
+	} {
+		if tc.wantPanic {
+			xtesting.Panic(t, func() { NewRotateLogHook(tc.giveCfg) })
+		} else {
+			NewRotateLogHook(tc.giveCfg)
+		}
 	}
-	l.AddHook(NewRotateLogHook(cfg))
-	l.SetFormatter(&CustomFormatter{DisableColor: true})
 
-	for i := 0; i < 5; i++ {
-		l.Infof("test at %s", time.Now().Format(time.RFC3339Nano))
-		time.Sleep(time.Millisecond * 100)
-	}
-
-	l = logrus.New()
-	l.SetLevel(logrus.TraceLevel)
-	cfg.Formatter = &fakeFormatter{}
-	l.AddHook(NewRotateLogHook(cfg))
-	l.Error("!!!!!!")
+	// test fire
+	hook := NewRotateLogHook(&RotateLogConfig{
+		Filename:         "console",
+		FilenameTimePart: ".%Y%m%d.log",
+		LinkFileName:     "console.curr.log",
+		Level:            logrus.WarnLevel,
+		Formatter:        &logrus.JSONFormatter{TimestampFormat: time.RFC3339},
+		MaxAge:           time.Hour * 24 * 30,
+		MaxSize:          100,
+		RotationTime:     time.Hour * 24,
+		LocalTime:        false,
+		ForceNewFile:     false,
+	})
+	xtesting.Equal(t, hook.Levels(), []logrus.Level{logrus.PanicLevel, logrus.FatalLevel, logrus.ErrorLevel, logrus.WarnLevel})
+	xtesting.Nil(t, hook.Fire(logrus.WithField("key", "value")))
 }

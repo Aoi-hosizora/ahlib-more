@@ -4,71 +4,103 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-// GenerateToken generates token with jwt.SigningMethodHS256.
-func GenerateToken(claims jwt.Claims, secret []byte) (string, error) {
-	method := jwt.SigningMethodHS256
-	return GenerateTokenWithMethod(method, claims, secret)
-}
-
-// GenerateTokenWithMethod uses a jwt.SigningMethod to generate token.
-func GenerateTokenWithMethod(method jwt.SigningMethod, claims jwt.Claims, secret []byte) (string, error) {
-	token := jwt.NewWithClaims(method, claims)
-	tokenString, err := token.SignedString(secret)
+// GenerateToken generates token using given jwt.Claims, secret and jwt.SigningMethod.
+func GenerateToken(method jwt.SigningMethod, claims jwt.Claims, key interface{}) (string, error) {
+	tokenObj := jwt.NewWithClaims(method, claims)
+	token, err := tokenObj.SignedString(key)
 	if err != nil {
 		return "", err
 	}
-
-	return tokenString, nil
+	return token, nil
 }
 
-// ParseToken parses jwt token using given secret.
-func ParseToken(signedToken string, secret []byte, claims jwt.Claims) (jwt.Claims, error) {
+// GenerateTokenWithHS256 generates token using given jwt.Claims, secret and HS256 (HMAC SHA256) signing method.
+func GenerateTokenWithHS256(claims jwt.Claims, secret []byte) (string, error) {
+	return GenerateToken(jwt.SigningMethodHS256, claims, secret)
+}
+
+// GenerateTokenWithHS384 generates token using given jwt.Claims, secret and HS384 (HMAC SHA384) signing method.
+func GenerateTokenWithHS384(claims jwt.Claims, secret []byte) (string, error) {
+	return GenerateToken(jwt.SigningMethodHS384, claims, secret)
+}
+
+// GenerateTokenWithHS512 generates token using given jwt.Claims, secret and HS512 (HMAC SHA512) signing method.
+func GenerateTokenWithHS512(claims jwt.Claims, secret []byte) (string, error) {
+	return GenerateToken(jwt.SigningMethodHS512, claims, secret)
+}
+
+// ParseToken parses jwt token string using given custom jwt.Claims and returns jwt.Token.
+func ParseToken(signedToken string, secret []byte, claims jwt.Claims) (*jwt.Token, error) {
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		return secret, nil
 	}
-	token, err := jwt.ParseWithClaims(signedToken, claims, keyFunc)
+	tokenObj, err := jwt.ParseWithClaims(signedToken, claims, keyFunc)
 	if err != nil {
 		return nil, err
 	}
-
-	return token.Claims, nil
+	return tokenObj, nil
 }
 
-// Default validation error, use jwt.ValidationErrorClaimsInvalid.
-var DefaultValidationError = jwt.NewValidationError("token is invalid", jwt.ValidationErrorClaimsInvalid)
+// ParseTokenClaims parses jwt token string using given custom jwt.Claims and returns jwt.Claims.
+func ParseTokenClaims(signedToken string, secret []byte, claims jwt.Claims) (jwt.Claims, error) {
+	tokenObj, err := ParseToken(signedToken, secret, claims)
+	if err != nil {
+		return nil, err
+	}
+	return tokenObj.Claims, nil
+}
 
-// CheckFlagError checks standard Claim validation errors.
-func CheckFlagError(err error, flag uint32) bool {
+// CheckValidationError returns true if given error is jwt.ValidationError with given flag.
+func CheckValidationError(err error, flag uint32) bool {
 	if err == nil {
 		return false
 	}
-	if ve, ok := err.(*jwt.ValidationError); ok {
-		return ve.Errors&flag != 0
-	}
-	return false
+
+	ve, ok := err.(*jwt.ValidationError)
+	return ok && ve.Errors&flag != 0
 }
 
-// EXP validation failed.
-func TokenExpired(err error) bool {
-	return CheckFlagError(err, jwt.ValidationErrorExpired)
+// IsAudienceError checks error is an AUD (Audience) validation error.
+func IsAudienceError(err error) bool {
+	return CheckValidationError(err, jwt.ValidationErrorAudience)
 }
 
-// IAT validation failed.
-func TokenNotIssued(err error) bool {
-	return CheckFlagError(err, jwt.ValidationErrorIssuedAt)
+// IsExpiredError checks error is an EXP (Expires at) validation error.
+func IsExpiredError(err error) bool {
+	return CheckValidationError(err, jwt.ValidationErrorExpired)
 }
 
-// ISS validation failed.
-func TokenIssuerInvalid(err error) bool {
-	return CheckFlagError(err, jwt.ValidationErrorIssuer)
+// IsIdError checks error is a JTI (Id) validation error.
+func IsIdError(err error) bool {
+	return CheckValidationError(err, jwt.ValidationErrorId)
 }
 
-// NBF validation failed.
-func TokenNotValidYet(err error) bool {
-	return CheckFlagError(err, jwt.ValidationErrorNotValidYet)
+// IsIssuedAtError checks error is an IAT (Issued at) validation error.
+func IsIssuedAtError(err error) bool {
+	return CheckValidationError(err, jwt.ValidationErrorIssuedAt)
 }
 
-// Generic claims validation error.
-func TokenClaimsInvalid(err error) bool {
-	return CheckFlagError(err, jwt.ValidationErrorClaimsInvalid)
+// IsIssuerError checks error is an ISS (Issuer) validation error.
+func IsIssuerError(err error) bool {
+	return CheckValidationError(err, jwt.ValidationErrorIssuer)
+}
+
+// IsNotValidYetError checks error is a NBF (Not before) validation error.
+func IsNotValidYetError(err error) bool {
+	return CheckValidationError(err, jwt.ValidationErrorNotValidYet)
+}
+
+// // IsSubjectError checks error is a SUB (Subject) validation error.
+// func IsSubjectError(err error) bool {
+// 	return CheckValidationError(err, jwt.ValidationErrorSubject) // not found
+// }
+
+// IsTokenInvalidError checks error is an invalid token (could not be parsed) error.
+func IsTokenInvalidError(err error) bool {
+	return CheckValidationError(err, jwt.ValidationErrorMalformed|jwt.ValidationErrorUnverifiable|jwt.ValidationErrorSignatureInvalid)
+}
+
+// IsClaimsInvalidError checks error is a generic claims validation error.
+func IsClaimsInvalidError(err error) bool {
+	return CheckValidationError(err, jwt.ValidationErrorClaimsInvalid)
 }

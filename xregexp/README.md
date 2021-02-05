@@ -1,4 +1,4 @@
-# xlogger
+# xregexp
 
 ## Dependencies
 
@@ -8,11 +8,11 @@
 
 ### Types
 
-+ `type StdLogger interface`
++ None
 
 ### Variables
 
-+ `var Std *logger.Logger`
++ ... (XxxRegex)
 
 ### Constants
 
