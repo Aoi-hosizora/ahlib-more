@@ -39,7 +39,7 @@ func ParamRegexpValidator() validator.Func {
 		}
 		re, err := regexp.Compile(regexpParam)
 		if err != nil {
-			return false
+			return false // return false
 		}
 		return re.MatchString(text)
 	}
@@ -267,7 +267,7 @@ func eqHelper(i, p interface{}) (bool, bool) {
 		return ok && v.Bool() == p, true
 	case reflect.String:
 		p, ok := xreflect.GetString(p)
-		return ok && v.String() == p, true // validate the value
+		return ok && v.String() == p, true // validate the string value
 	case reflect.Slice, reflect.Array, reflect.Map:
 		p, ok := xreflect.GetInt(p)
 		return ok && v.Len() == int(p), true
@@ -296,7 +296,7 @@ func compLenHelper(i, p interface{}, fi func(i, p int64) bool, fu func(i, p uint
 		return ok && fi(int64(xnumber.Bool(v.Bool())), int64(xnumber.Bool(p)))
 	case reflect.String:
 		p, ok := xreflect.GetInt(p)
-		return ok && fi(int64(len([]rune(v.String()))), p) // validate the length of the value
+		return ok && fi(int64(len([]rune(v.String()))), p) // validate the string length
 	case reflect.Slice, reflect.Array, reflect.Map:
 		p, ok := xreflect.GetInt(p)
 		return ok && fi(int64(v.Len()), p)

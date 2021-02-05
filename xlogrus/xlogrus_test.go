@@ -53,7 +53,7 @@ func TestSimpleFormatter(t *testing.T) {
 func TestRotateFileHook(t *testing.T) {
 	for _, tc := range []struct {
 		giveCfg   *RotateFileConfig
-		wantPanic bool
+		wantPanic bool // only test panic
 	}{
 		{nil, true},
 		{&RotateFileConfig{Filename: ""}, true},
@@ -70,6 +70,7 @@ func TestRotateFileHook(t *testing.T) {
 		}
 	}
 
+	// test fire
 	hook := NewRotateFileHook(&RotateFileConfig{
 		Filename:  "console.log",
 		Level:     logrus.WarnLevel,
@@ -86,7 +87,7 @@ func TestRotateFileHook(t *testing.T) {
 func TestRotateLogHook(t *testing.T) {
 	for _, tc := range []struct {
 		giveCfg   *RotateLogConfig
-		wantPanic bool
+		wantPanic bool // only test panic
 	}{
 		{nil, true},
 		{&RotateLogConfig{Filename: ""}, true},
@@ -109,6 +110,7 @@ func TestRotateLogHook(t *testing.T) {
 		}
 	}
 
+	// test fire
 	hook := NewRotateLogHook(&RotateLogConfig{
 		Filename:         "console",
 		FilenameTimePart: ".%Y%m%d.log",

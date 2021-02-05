@@ -29,7 +29,7 @@ import (
 // TranslationRegisterHandler represents a translation register function, which is the type of en.RegisterDefaultTranslations,
 // zh.RegisterDefaultTranslations and so on, here `en` and `zh` packages are from github.com/go-playground/validator/v10/translations.
 //
-// These kind of values can be get from DefaultTranslateFunc, EnTranslationFunc, ZhTranslationFunc and so on.
+// These kind of values can be get from xvalidator.EnTranslationRegisterFunc, xvalidator.ZhTranslationRegisterFunc and so on.
 type TranslationRegisterHandler func(v *validator.Validate, trans ut.Translator) error
 
 const (
@@ -38,36 +38,39 @@ const (
 	panicNilTranslationRegisterFn = "xvalidator: nil translation register function"
 )
 
-// ApplyValidatorTranslator applies translation to validator.Validate using given locales.Translator and TranslationRegisterHandler, and
-// returns a ut.Translator (universal translator).
+// ApplyTranslator applies translator to validator.Validate using given locales.Translator and TranslationRegisterHandler, and
+// returns a ut.Translator (universal translator). Also see xvalidator.AddToTranslatorFunc and xvalidator.DefaultTranslateFunc.
 //
 // Note:
+//
 // 1. locales.Translator can be get from en.New(), zh.New() and so on, here `en` and `zh` packages are from github.com/go-playground/locales.
-// These kind of values can also be get from xvalidator.EnLocaleTranslator, xvalidator.ZhLocaleTranslator and so on;
+// These kind of values can also be get from xvalidator.EnLocaleTranslator, xvalidator.ZhLocaleTranslator and so on.
+//
 // 2. xvalidator.TranslationRegisterHandler can be get from en.RegisterDefaultTranslations, zh.RegisterDefaultTranslations and so on, here
 // `en` and `zh` packages are from github.com/go-playground/validator/v10/translations. These kind of values can also be get from
-// xvalidator.DefaultTranslationRegisterFunc, xvalidator.EnTranslationRegisterFunc, xvalidator.ZhTranslationRegisterFunc and so on.
+// xvalidator.EnTranslationRegisterFunc, xvalidator.ZhTranslationRegisterFunc and so on.
 //
-// Also see xvalidator.AddToTranslatorFunc and xvalidator.DefaultTranslateFunc.
 // Example:
 // 	validator := validator.New()
-// 	translator := xvalidator.ApplyValidatorTranslator(validator, en.New(), xvalidator.EnTranslationRegisterFunc()) // ut.Translator
-// 	translatorFunc := xvalidator.AddToTranslatorFunc("tag", "{0} has {1}", false) // validator.RegisterTranslationsFunc
-// 	_ = validator.RegisterTranslation("tag", translator, translatorFunc, xvalidator.DefaultTranslateFunc())
-func ApplyValidatorTranslator(validator *validator.Validate, locTrans locales.Translator, registerFn TranslationRegisterHandler) (ut.Translator, error) {
+// 	// apply default translation to validator
+// 	translator := xvalidator.ApplyTranslator(validator, xvalidator.EnLocaleTranslator(), xvalidator.EnTranslationRegisterFunc()) // ut.Translator
+// 	// use validator.RegisterTranslationsFunc and validator.TranslationFunc to register translation
+// 	translationFunc := xvalidator.AddToTranslatorFunc("tag", "{0} has {1}", false) // validator.RegisterTranslationsFunc
+// 	validator.RegisterTranslation("tag", translator, translationFunc, xvalidator.DefaultTranslateFunc())
+func ApplyTranslator(validator *validator.Validate, locTranslator locales.Translator, registerFn TranslationRegisterHandler) (ut.Translator, error) {
 	if validator == nil {
 		panic(panicNilValidator)
 	}
-	if locTrans == nil {
+	if locTranslator == nil {
 		panic(panicNilLocaleTranslator)
 	}
 	if registerFn == nil {
 		panic(panicNilTranslationRegisterFn)
 	}
 
-	uniTranslator := ut.New(locTrans, locTrans)
-	translator, _ := uniTranslator.GetTranslator(locTrans.Locale())
-	err := registerFn(validator, translator) // register translation to validator
+	uniTranslator := ut.New(locTranslator, locTranslator)
+	translator, _ := uniTranslator.GetTranslator(locTranslator.Locale()) // must found
+	err := registerFn(validator, translator)                             // register translator to validator
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +85,7 @@ func ApplyValidatorTranslator(validator *validator.Validate, locTrans locales.Tr
 // AddToTranslatorFunc returns a validator.RegisterTranslationsFunc function, it uses the given tag, translation and override parameters
 // to **register translation information** for a ut.Translator and will be used within the validator.TranslationFunc.
 //
-// This function can be used for validator.Validate's RegisterTranslation() method's translationFn parameter.
+// This function can be used for validator.Validate RegisterTranslation() method's translationFn (the second) parameter, also see ApplyTranslator.
 func AddToTranslatorFunc(tag string, translation string, override bool) validator.RegisterTranslationsFunc {
 	return func(ut ut.Translator) error {
 		return ut.Add(tag, translation, override)
@@ -92,10 +95,10 @@ func AddToTranslatorFunc(tag string, translation string, override bool) validato
 // DefaultTranslateFunc returns a validator.TranslationFunc function, it uses the field name (validator.FieldError's field) as the first
 // parameter ({0}), and the field param (validator.FieldError's param) as the second parameter ({1}) to **create translation for the given tag**.
 //
-// This function can be used for validator.Validate's RegisterTranslation() method's registerFn parameter.
+// This function can be used for validator.Validate RegisterTranslation() method's registerFn (the third) parameter, also see ApplyTranslator.
 func DefaultTranslateFunc() validator.TranslationFunc {
 	return func(ut ut.Translator, fe validator.FieldError) string {
-		t, err := ut.T(fe.Tag(), fe.Field(), fe.Param()) // field to {0} & param to {1}
+		t, err := ut.T(fe.Tag(), fe.Field(), fe.Param()) // field to {0}, param to {1}
 		if err != nil {
 			return fe.(error).Error()
 		}
@@ -157,9 +160,9 @@ func ZhHantLocaleTranslator() locales.Translator {
 	return loc_zh_Hant.New()
 }
 
-// ============================
-// default translation register
-// ============================
+// =========================
+// translation register func
+// =========================
 
 // EnTranslationRegisterFunc is a TranslationRegisterHandler for en.RegisterDefaultTranslations.
 // From github.com/go-playground/validator/v10/translations/en.

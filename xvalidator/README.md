@@ -2,10 +2,10 @@
 
 ## Dependencies
 
++ github.com/Aoi-hosizora/ahlib
 + github.com/go-playground/locales
 + github.com/go-playground/universal-translator
 + github.com/go-playground/validator/v10
-+ xtesting*
 
 ## Documents
 
@@ -39,7 +39,7 @@
 + `func LengthInRangeValidator(min, max interface{}) validator.Func`
 + `func LengthOutOfRangeValidator(min, max interface{}) validator.Func`
 + `func OneofValidator(ps ...interface{}) validator.Func`
-+ `func ApplyValidatorTranslator(validator *validator.Validate, loc locales.Translator, registerFn TranslationRegisterHandler) (ut.Translator, error)`
++ `func ApplyTranslator(validator *validator.Validate, locTranslator locales.Translator, registerFn TranslationRegisterHandler) (ut.Translator, error)`
 + `func AddToTranslatorFunc(tag string, translation string, override bool) validator.RegisterTranslationsFunc`
 + `func DefaultTranslateFunc() validator.TranslationFunc`
 + `func EnLocaleTranslator() locales.Translator`

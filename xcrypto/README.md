@@ -2,8 +2,8 @@
 
 ## Dependencies
 
++ github.com/Aoi-hosizora/ahlib
 + golang.org/x/crypto
-+ xtesting*
 
 ## Documents
 

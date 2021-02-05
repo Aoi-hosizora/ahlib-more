@@ -2,9 +2,9 @@
 
 ## Dependencies
 
++ github.com/Aoi-hosizora/ahlib
 + github.com/saintfish/chardet
 + golang.org/x/text
-+ xtesting*
 
 ## Documents
 

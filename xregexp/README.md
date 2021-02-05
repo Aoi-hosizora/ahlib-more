@@ -12,7 +12,7 @@
 
 ### Variables
 
-+ ... (xxxRegex)
++ ... (XxxRegex)
 
 ### Constants
 

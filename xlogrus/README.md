@@ -2,6 +2,7 @@
 
 ## Dependencies
 
++ github.com/Aoi-hosizora/ahlib
 + github.com/sirupsen/logrus
 + github.com/ah-forklib/lumberjack (gopkg.in/natefinch/lumberjack.v2)
 + github.com/ah-forklib/rotatelogs (github.com/lestrrat-go/file-rotatelogs)

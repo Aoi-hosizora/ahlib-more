@@ -2,8 +2,8 @@
 
 ## Dependencies
 
++ github.com/Aoi-hosizora/ahlib
 + github.com/dgrijalva/jwt-go
-+ xtesting*
 
 ## Documents
 
