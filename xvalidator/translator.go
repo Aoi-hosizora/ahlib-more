@@ -12,7 +12,7 @@ import (
 	loc_tr "github.com/go-playground/locales/tr"
 	loc_zh "github.com/go-playground/locales/zh"
 	loc_zh_Hant "github.com/go-playground/locales/zh_Hant"
-	"github.com/go-playground/universal-translator"
+	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 	trans_en "github.com/go-playground/validator/v10/translations/en"
 	trans_fr "github.com/go-playground/validator/v10/translations/fr"
@@ -25,6 +25,9 @@ import (
 	trans_zh "github.com/go-playground/validator/v10/translations/zh"
 	trans_zh_tw "github.com/go-playground/validator/v10/translations/zh_tw"
 )
+ 
+// UtTranslator represents an alias type of ut.Translator.
+type UtTranslator = ut.Translator
 
 // TranslationRegisterHandler represents a translation register function, which is the type of en.RegisterDefaultTranslations,
 // zh.RegisterDefaultTranslations and so on, here `en` and `zh` packages are from github.com/go-playground/validator/v10/translations.

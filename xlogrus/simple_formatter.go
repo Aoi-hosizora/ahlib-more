@@ -40,11 +40,6 @@ func (s *SimpleFormatter) initOnce(entry *logrus.Entry) {
 func (s *SimpleFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	s.initOnce(entry)
 
-	buf := &bytes.Buffer{}
-	if entry.Buffer != nil {
-		buf = entry.Buffer
-	}
-
 	// 1. time
 	timeFormat := time.RFC3339 // default format
 	if s.TimestampFormat != "" {
@@ -78,7 +73,11 @@ func (s *SimpleFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	level := strings.ToUpper(entry.Level.String()[0:4])
 	message := strings.TrimSuffix(entry.Message, "\n")
 
-	// write
+	// write to buffer
+	buf := &bytes.Buffer{}
+	if entry.Buffer != nil {
+		buf = entry.Buffer
+	}
 	if s.DisableColor {
 		_, _ = fmt.Fprintf(buf, "%s [%s]%s %s", level, now, caller, message)
 	} else {

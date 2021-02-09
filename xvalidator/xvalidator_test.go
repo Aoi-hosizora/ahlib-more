@@ -9,24 +9,27 @@ import (
 	"testing"
 )
 
-func TestIsRequiredError(t *testing.T) {
+func TestIsXXXError(t *testing.T) {
 	val := validator.New()
 	type testStruct struct {
 		Int int `validate:"required,lt=2"`
 	}
 
 	for _, tc := range []struct {
-		giveErr error
-		wantOk  bool
+		giveErr   error
+		wantReqOk bool
+		wantValOk bool
 	}{
-		{nil, false},
-		{errors.New("test"), false},
-		{validator.ValidationErrors{}, false},
-		{val.Struct(&testStruct{}), true},
-		{val.Struct(&testStruct{Int: 1}), false},
-		{val.Struct(&testStruct{Int: 3}), false},
+		{nil, false, false},
+		{errors.New("test"), false, false},
+		{validator.ValidationErrors{}, false, true},
+		{val.Struct(&testStruct{}), true, true},
+		{val.Struct(&testStruct{Int: 0}), true, true},
+		{val.Struct(&testStruct{Int: 1}), false, false},
+		{val.Struct(&testStruct{Int: 3}), false, true},
 	} {
-		xtesting.Equal(t, IsRequiredError(tc.giveErr), tc.wantOk)
+		xtesting.Equal(t, IsValidationError(tc.giveErr), tc.wantValOk)
+		xtesting.Equal(t, IsRequiredError(tc.giveErr), tc.wantReqOk)
 	}
 }
 

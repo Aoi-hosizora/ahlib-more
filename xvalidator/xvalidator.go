@@ -9,6 +9,12 @@ import (
 	"time"
 )
 
+// IsValidationError returns true if the error is validator.ValidationErrors.
+func IsValidationError(err error) bool {
+	_, ok := err.(validator.ValidationErrors)
+	return ok
+}
+
 // IsRequiredError returns true if the error is validator.ValidationErrors with required tag.
 func IsRequiredError(err error) bool {
 	errs, ok := err.(validator.ValidationErrors)

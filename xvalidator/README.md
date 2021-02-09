@@ -11,6 +11,7 @@
 
 ### Types
 
++ `type UtTranslator = ut.Translator`
 + `type TranslationRegisterHandler func`
 
 ### Variables
@@ -23,6 +24,7 @@
 
 ### Functions
 
++ `func IsValidationError(err error) bool`
 + `func IsRequiredError(err error) bool`
 + `func ParamRegexpValidator() validator.Func`
 + `func RegexpValidator(re *regexp.Regexp) validator.Func`
