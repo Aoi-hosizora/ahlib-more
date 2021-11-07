@@ -9,6 +9,7 @@ import (
 	"encoding/base32"
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"github.com/Aoi-hosizora/ahlib/xstring"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/crypto/md4"
@@ -256,7 +257,7 @@ func PKCS5Padding(data []byte, blockSize int) []byte {
 	return append(data, padText...)
 }
 
-// PKCS5Padding uses PKCS#5 and PKCS#7 to trim data from block aligned bytes.
+// PKCS5Trimming uses PKCS#5 and PKCS#7 to trim data from block aligned bytes.
 func PKCS5Trimming(data []byte) []byte {
 	length := len(data)
 	padLen := int(data[length-1])
@@ -280,17 +281,17 @@ func BcryptEncrypt(password []byte, cost int) ([]byte, error) {
 
 // BcryptEncryptWithDefaultCost uses bcrypt to encrypt password using BcryptDefaultCost.
 func BcryptEncryptWithDefaultCost(password []byte) ([]byte, error) {
-	return BcryptEncrypt(password, BcryptDefaultCost)
+	return bcrypt.GenerateFromPassword(password, BcryptDefaultCost)
 }
 
 // BcryptCompare compares hashed encrypted password and given password.
 func BcryptCompare(password, encrypted []byte) (ok bool, err error) {
-	err = bcrypt.CompareHashAndPassword(encrypted, password) // x/crypto/bcrypt
-	if err != nil {
-		if err == bcrypt.ErrMismatchedHashAndPassword { // don't use errors.Is
-			return false, nil
-		}
-		return false, err
+	err = bcrypt.CompareHashAndPassword(encrypted, password)
+	if err == nil {
+		return true, nil
 	}
-	return true, nil
+	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+		return false, nil
+	}
+	return false, err
 }

@@ -16,7 +16,7 @@ type DetectResult struct {
 	Confidence int
 }
 
-// DetectBestCharset detects bytes and returns the charset result with highest confidence.
+// DetectBestCharset detects bytes and returns the charset result with the highest confidence.
 func DetectBestCharset(bs []byte) (*DetectResult, bool) {
 	detector := chardet.NewTextDetector()
 	result, err := detector.DetectBest(bs)

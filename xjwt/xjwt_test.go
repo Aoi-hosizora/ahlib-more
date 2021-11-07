@@ -3,7 +3,7 @@ package xjwt
 import (
 	"errors"
 	"github.com/Aoi-hosizora/ahlib/xtesting"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v4"
 	"testing"
 	"time"
 )

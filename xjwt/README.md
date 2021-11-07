@@ -3,7 +3,7 @@
 ## Dependencies
 
 + github.com/Aoi-hosizora/ahlib
-+ github.com/dgrijalva/jwt-go
++ github.com/golang-jwt/jwt
 
 ## Documents
 

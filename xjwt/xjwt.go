@@ -1,7 +1,7 @@
 package xjwt
 
 import (
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 // GenerateToken generates token using given jwt.Claims, secret and jwt.SigningMethod.

@@ -11,8 +11,8 @@ import (
 	"time"
 )
 
-// SimpleFormatter represents a simple formatter for logrus.Logger, it only formats level, time, caller and message information
-// in colored, and the logrus.Fields data is not be logged like logrus.TextFormatter does.
+// SimpleFormatter represents a simple formatter for logrus.Logger, it only formats level, time, caller and message information in colored or in no colored,
+// and the logrus.Fields data will not be logged like logrus.TextFormatter does.
 type SimpleFormatter struct {
 	// TimestampFormat represents the time format, uses time.RFC3339 as default.
 	TimestampFormat string
@@ -37,6 +37,9 @@ func (s *SimpleFormatter) initOnce(entry *logrus.Entry) {
 }
 
 // Format renders a single log entry, this method implements logrus.Formatter.
+// Logs like:
+// 	WARN [2021-08-29T05:56:25+08:00] test
+// 	INFO [2021-08-29T05:56:25+08:00] a.go:1 fn() > test
 func (s *SimpleFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	s.initOnce(entry)
 
@@ -66,7 +69,10 @@ func (s *SimpleFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 			sp.WriteByte(' ')
 			sp.WriteString(funcVal)
 		}
-		caller = sp.String() // runtime caller string
+		if fileVal != "" || funcVal != "" {
+			sp.WriteString(" >")
+		}
+		caller = sp.String()
 	}
 
 	// 3. message

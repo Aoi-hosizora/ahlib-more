@@ -2,25 +2,27 @@ package xlogger
 
 import (
 	"log"
-	"os"
+	_ "unsafe"
 )
 
-// Std is the standard logger creates by log.New.
-var Std = log.New(os.Stderr, "", log.LstdFlags)
+//go:linkname Std log.std
+
+// Std represents the standard logger creates by log.New, that equals to `log.New(os.Stderr, "", log.LstdFlags)`.
+var Std *log.Logger
 
 var _ StdLogger = (*log.Logger)(nil)
 
 // StdLogger describes how log.Logger works like, includes Print, Panic, Fatal series methods.
 type StdLogger interface {
-	Print(...interface{})
-	Printf(string, ...interface{})
-	Println(...interface{})
+	Print(v ...interface{})
+	Printf(format string, v ...interface{})
+	Println(v ...interface{})
 
-	Panic(...interface{})
-	Panicf(string, ...interface{})
-	Panicln(...interface{})
+	Panic(v ...interface{})
+	Panicf(format string, v ...interface{})
+	Panicln(v ...interface{})
 
-	Fatal(...interface{})
-	Fatalf(string, ...interface{})
-	Fatalln(...interface{})
+	Fatal(v ...interface{})
+	Fatalf(format string, v ...interface{})
+	Fatalln(v ...interface{})
 }
