@@ -22,7 +22,7 @@ func TestGenerateToken(t *testing.T) {
 		{jwt.SigningMethodES384, []byte{}, true},
 		{jwt.SigningMethodES512, []byte{}, true},
 	} {
-		_, err := GenerateToken(tc.giveMethod, &jwt.StandardClaims{}, tc.wantSecret)
+		_, err := GenerateToken(tc.giveMethod, &jwt.RegisteredClaims{}, tc.wantSecret)
 		if tc.wantError {
 			xtesting.NotNil(t, err)
 		} else {
@@ -42,7 +42,7 @@ func TestGenerateToken(t *testing.T) {
 		{GenerateTokenWithHS512, []byte{}, false},
 		{GenerateTokenWithHS512, []byte{'#'}, false},
 	} {
-		token, err := tc.giveFn(&jwt.StandardClaims{}, tc.giveSecret)
+		token, err := tc.giveFn(&jwt.RegisteredClaims{}, tc.giveSecret)
 		if tc.wantError {
 			xtesting.NotNil(t, err)
 		} else {
@@ -57,7 +57,7 @@ func TestParseToken(t *testing.T) {
 	type userClaims struct {
 		Uid      uint64
 		Username string
-		jwt.StandardClaims
+		jwt.RegisteredClaims
 	}
 	uid := uint64(20)
 	username := "test user"
@@ -66,11 +66,11 @@ func TestParseToken(t *testing.T) {
 	claims := &userClaims{
 		Uid:      uid,
 		Username: username,
-		StandardClaims: jwt.StandardClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    username,
-			IssuedAt:  now.Unix(),
-			NotBefore: now.Add(time.Second).Unix(),
-			ExpiresAt: now.Add(2 * time.Second).Unix(),
+			IssuedAt:  jwt.NewNumericDate(now),
+			NotBefore: jwt.NewNumericDate(now.Add(time.Second)),
+			ExpiresAt: jwt.NewNumericDate(now.Add(2 * time.Second)),
 		},
 	}
 	// | now | +1s | +2s | +3s |
@@ -95,14 +95,14 @@ func TestParseToken(t *testing.T) {
 	xtesting.Equal(t, parsedToken.Claims.(*userClaims).Uid, uid)
 	xtesting.Equal(t, parsedToken.Claims.(*userClaims).Username, username)
 	xtesting.Equal(t, parsedToken.Claims.(*userClaims).Issuer, username)
-	xtesting.Equal(t, parsedToken.Claims.(*userClaims).IssuedAt, now.Unix())
+	xtesting.Equal(t, parsedToken.Claims.(*userClaims).IssuedAt.Unix(), now.Unix())
 
 	parsedClaims, err := ParseTokenClaims(token, secret, &userClaims{})
 	xtesting.Nil(t, err)
 	xtesting.Equal(t, parsedClaims.(*userClaims).Uid, uid)
 	xtesting.Equal(t, parsedClaims.(*userClaims).Username, username)
 	xtesting.Equal(t, parsedClaims.(*userClaims).Issuer, username)
-	xtesting.Equal(t, parsedClaims.(*userClaims).IssuedAt, now.Unix())
+	xtesting.Equal(t, parsedClaims.(*userClaims).IssuedAt.Unix(), now.Unix())
 
 	// 3. EXP
 	time.Sleep(2 * time.Second)

@@ -7,5 +7,4 @@
 ### Project ###
 logs/
 build/
-coverage.txt
 *.log

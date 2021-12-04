@@ -36,7 +36,7 @@ func (s *SimpleFormatter) initOnce(entry *logrus.Entry) {
 	})
 }
 
-// Format renders a single log entry, this method implements logrus.Formatter.
+// Format formats a single log entry, this method implements logrus.Formatter.
 // Logs like:
 // 	WARN [2021-08-29T05:56:25+08:00] test
 // 	INFO [2021-08-29T05:56:25+08:00] a.go:1 fn() > test

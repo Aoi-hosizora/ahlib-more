@@ -55,6 +55,7 @@ const (
 )
 
 // NewRotateLogHook creates a RotateLogHook as logrus.Hook with RotateLogConfig.
+//
 // Example:
 // 	hook := NewRotateLogHook(&RotateLogConfig{
 // 		Filename:         "console",

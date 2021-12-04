@@ -27,11 +27,12 @@ type RotateFileConfig struct {
 	// LocalTime represents the switcher for local or UTC time, defaults to use UTC time.
 	LocalTime bool
 
-	// Compress represents the switcher of compression, defaults not to perform compression.
+	// Compress represents the switcher for compression, defaults not to perform compression.
 	Compress bool
 }
 
 // RotateFileHook represents a logrus hook for writing logs into a single file.
+//
 // Example:
 // 	hook := NewRotateFileHook(&RotateFileConfig{
 // 		Filename:  "console.log",
