@@ -5,14 +5,15 @@ import (
 	"fmt"
 	"github.com/Aoi-hosizora/ahlib/xcolor"
 	"github.com/sirupsen/logrus"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
 	"time"
 )
 
-// SimpleFormatter represents a simple formatter for logrus.Logger, it only formats level, time, caller and message information in colored or in no colored,
-// and the logrus.Fields data will not be logged like logrus.TextFormatter does.
+// SimpleFormatter represents a simple formatter for logrus.Logger, it only formats level, time, caller and message information with color
+// or without color, also note that the logrus.Fields data will not be printed as logrus.TextFormatter does.
 type SimpleFormatter struct {
 	// TimestampFormat represents the time format, uses time.RFC3339 as default.
 	TimestampFormat string
@@ -36,7 +37,8 @@ func (s *SimpleFormatter) initOnce(entry *logrus.Entry) {
 	})
 }
 
-// Format formats a single log entry, this method implements logrus.Formatter.
+// Format formats a single log entry, this method implements logrus.Formatter interface.
+//
 // Logs like:
 // 	WARN [2021-08-29T05:56:25+08:00] test
 // 	INFO [2021-08-29T05:56:25+08:00] a.go:1 fn() > test
@@ -53,58 +55,58 @@ func (s *SimpleFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	// 2. caller
 	caller := ""
 	if entry.HasCaller() {
-		var funcVal, fileVal string
+		var funcName, filename string
 		if s.RuntimeCaller != nil {
-			funcVal, fileVal = s.RuntimeCaller(entry.Caller)
+			funcName, filename = s.RuntimeCaller(entry.Caller)
 		} else {
-			funcVal = fmt.Sprintf("%s()", entry.Caller.Function)
-			fileVal = fmt.Sprintf("%s:%d", entry.Caller.File, entry.Caller.Line)
+			_, funcName = filepath.Split(entry.Caller.Function)
+			_, filename = filepath.Split(entry.Caller.File)
+			funcName = fmt.Sprintf("%s()", funcName)
+			filename = fmt.Sprintf("%s:%d", filename, entry.Caller.Line)
 		}
-		sp := strings.Builder{}
-		if fileVal != "" {
-			sp.WriteByte(' ')
-			sp.WriteString(fileVal)
+		parts := make([]string, 0, 3)
+		if filename != "" {
+			parts = append(parts, filename)
 		}
-		if funcVal != "" {
-			sp.WriteByte(' ')
-			sp.WriteString(funcVal)
+		if funcName != "" {
+			parts = append(parts, funcName)
 		}
-		if fileVal != "" || funcVal != "" {
-			sp.WriteString(" >")
+		if len(parts) > 0 {
+			parts = append(parts, ">")
 		}
-		caller = sp.String()
+		if len(parts) > 0 {
+			caller = " " + strings.Join(parts, " ")
+		}
 	}
 
 	// 3. message
 	level := strings.ToUpper(entry.Level.String()[0:4])
 	message := strings.TrimSuffix(entry.Message, "\n")
 
-	// write to buffer
+	// *. write to buffer
 	buf := &bytes.Buffer{}
 	if entry.Buffer != nil {
 		buf = entry.Buffer
 	}
-	if s.DisableColor {
-		_, _ = fmt.Fprintf(buf, "%s [%s]%s %s", level, now, caller, message)
-	} else {
-		levelColor := int(s.levelColor(entry.Level))
-		_, _ = fmt.Fprintf(buf, "\x1b[%dm%s\x1b[0m [%s]%s %s", levelColor, level, now, caller, message)
+	levelString := level
+	if !s.DisableColor {
+		color := s.levelColor(entry.Level)
+		levelString = color.Sprintf(level)
 	}
-	buf.WriteByte('\n')
-
+	_, _ = fmt.Fprintf(buf, "%s [%s]%s %s\n", levelString, now, caller, message)
 	return buf.Bytes(), nil
 }
 
-// levelColor returns the color code from logrus.Level.
-func (s *SimpleFormatter) levelColor(level logrus.Level) uint8 {
+// levelColor returns the xcolor.Color from logrus.Level.
+func (s *SimpleFormatter) levelColor(level logrus.Level) xcolor.Color {
 	switch level {
 	case logrus.InfoLevel:
-		return xcolor.Blue.Code()
+		return xcolor.Blue
 	case logrus.WarnLevel:
-		return xcolor.Yellow.Code()
+		return xcolor.Yellow
 	case logrus.ErrorLevel, logrus.FatalLevel, logrus.PanicLevel:
-		return xcolor.Red.Code()
+		return xcolor.Red
 	default: // debug, trace
-		return xcolor.White.Code()
+		return xcolor.White
 	}
 }

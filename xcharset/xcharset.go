@@ -24,7 +24,7 @@ func DetectBestCharset(bs []byte) (*DetectResult, bool) {
 		return nil, false // empty result
 	}
 
-	return newDetectResultFromChardet(result), true
+	return detectResultFromChardet(result), true
 }
 
 // DetectAllCharsets detects bytes and returns all charsets in confidence's descending order.
@@ -37,13 +37,13 @@ func DetectAllCharsets(bs []byte) ([]*DetectResult, bool) {
 
 	out := make([]*DetectResult, len(results))
 	for idx := range results {
-		out[idx] = newDetectResultFromChardet(&results[idx])
+		out[idx] = detectResultFromChardet(&results[idx])
 	}
 	return out, true
 }
 
-// newDetectResultFromChardet creates a DetectResult from chardet.Result, note that there are some bugs in `chardet` package.
-func newDetectResultFromChardet(r *chardet.Result) *DetectResult {
+// detectResultFromChardet creates a DetectResult from chardet.Result, note that there are some bugs in `chardet` package.
+func detectResultFromChardet(r *chardet.Result) *DetectResult {
 	charset := r.Charset
 	language := r.Language
 

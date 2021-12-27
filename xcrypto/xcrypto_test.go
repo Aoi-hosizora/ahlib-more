@@ -44,6 +44,10 @@ func TestUintHasher(t *testing.T) {
 		{FNV64a, "test", 0xf9e6e6ef197c2b25},
 		{FNV64a, "hello world", 0x779a65e7023cd2e7},
 		{FNV64a, "测试 テス тест", 0xa8009ce94a3ad872},
+		{CRC64, "", 0x0},
+		{CRC64, "test", 0x287c72c850000000},
+		{CRC64, "hello world", 0xb9cf3f572ad9ac3e},
+		{CRC64, "测试 テス тест", 0xe16038d3f4fca746},
 	} {
 		xtesting.Equal(t, tc.giveFn(tc.giveText), tc.want)
 	}
@@ -55,6 +59,12 @@ func TestStringHasher(t *testing.T) {
 		giveText string
 		wantText string
 	}{
+		{FNV128, "", "6c62272e07bb014262b821756295c58d"},
+		{FNV128, "test", "66ab2a8b6f757277b806e89c56faf339"},
+		{FNV128, "hello world", "e1b1650f0631aef5566634b6c074ac1f"},
+		{FNV128a, "", "6c62272e07bb014262b821756295c58d"},
+		{FNV128a, "test", "69d061a9c5757277b806e99413dd99a5"},
+		{FNV128a, "hello world", "6c155799fdc8eec4b91523808e7726b7"},
 		{MD4, "", "31d6cfe0d16ae931b73c59d7e0c089c0"},
 		{MD4, "test", "db346d691d7acc4dc2625db19f9e3f52"},
 		{MD4, "hello world", "aa010fbc1d14c795d86ef98c95479d17"},

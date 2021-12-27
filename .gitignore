@@ -7,4 +7,5 @@
 ### Project ###
 logs/
 build/
-*.log
+*.log*
+_ref

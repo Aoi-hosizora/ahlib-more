@@ -17,12 +17,13 @@ import (
 	"hash"
 	"hash/adler32"
 	"hash/crc32"
+	"hash/crc64"
 	"hash/fnv"
 )
 
-// ====
-// hash
-// ====
+// ===============
+// hash algorithms
+// ===============
 
 // FNV32 uses fnv32 to hash string to uint32.
 func FNV32(text string) uint32 {
@@ -48,10 +49,28 @@ func FNV64a(text string) uint64 {
 	return Uint64Hasher(algorithm, text)
 }
 
-// CRC32 uses crc32 to hash string to uint32.
+// FNV128 uses fnv128 to hash string.
+func FNV128(text string) string {
+	algorithm := fnv.New128() // hash/fnv
+	return StringHasher(algorithm, text)
+}
+
+// FNV128a uses fnv128 to hash string.
+func FNV128a(text string) string {
+	algorithm := fnv.New128a() // hash/fnv
+	return StringHasher(algorithm, text)
+}
+
+// CRC32 uses crc32 (IEEE table) to hash string to uint32.
 func CRC32(text string) uint32 {
 	algorithm := crc32.NewIEEE() // hash/crc32
 	return Uint32Hasher(algorithm, text)
+}
+
+// CRC64 uses crc64 (ISO table) to hash string to uint64.
+func CRC64(text string) uint64 {
+	algorithm := crc64.New(crc64.MakeTable(crc64.ISO)) // hash/crc64
+	return Uint64Hasher(algorithm, text)
 }
 
 // ADLER32 uses adler32 to hash string to uint32.
@@ -59,8 +78,6 @@ func ADLER32(text string) uint32 {
 	algorithm := adler32.New() // hash/adler32
 	return Uint32Hasher(algorithm, text)
 }
-
-// Reference: https://crypto.stackexchange.com/questions/68307/what-is-the-difference-between-sha-3-and-sha-256
 
 // MD4 uses md4 to hash string.
 func MD4(text string) string {
@@ -139,6 +156,10 @@ func SHA3_512(text string) string {
 	algorithm := sha3.New512() // x/crypto/sha3
 	return StringHasher(algorithm, text)
 }
+
+// =============
+// string hasher
+// =============
 
 // Uint32Hasher uses hash.Hash32 to encode string to uint32.
 func Uint32Hasher(algorithm hash.Hash32, text string) uint32 {
@@ -238,9 +259,9 @@ func Base64DecodeFromString(data string) ([]byte, error) {
 	return Base64DecodeFromBytes(xstring.FastStob(data))
 }
 
-// ====
-// pkcs
-// ====
+// =========================
+// pkcs padding and trimming
+// =========================
 
 const (
 	panicBlockSize = "xcrypto: blockSize must larger then 0"
@@ -264,9 +285,9 @@ func PKCS5Trimming(data []byte) []byte {
 	return data[:length-padLen]
 }
 
-// ======
-// bcrypt
-// ======
+// ==============
+// bcrypt related
+// ==============
 
 const (
 	BcryptMinCost     int = 4  // The bcrypt minimum allowable cost.

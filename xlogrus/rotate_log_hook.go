@@ -2,7 +2,7 @@ package xlogrus
 
 import (
 	"github.com/ah-forklib/rotatelogs"
-	"github.com/ah-forklib/strftime"
+	"github.com/ah-forklib/rotatelogs/strftime"
 	"github.com/sirupsen/logrus"
 	"io"
 	"time"
@@ -13,10 +13,10 @@ type RotateLogConfig struct {
 	// Filename represents the log filename without time part and extension, required.
 	Filename string
 
-	// FilenameTimePart represents time part after filename, defaults to ".%Y%m%d.log". See strftime.New.
+	// FilenameTimePart represents time part after filename, defaults to ".%Y%m%d.log", see strftime.New.
 	FilenameTimePart string
 
-	// LinkFileName represents the symbolic link filename, defaults to "", no link will be written.
+	// LinkFileName represents the symbolic link filename, defaults to "", means that no link will be written.
 	LinkFileName string
 
 	// Level represents the lowest log level, defaults to logrus.PanicLevel.

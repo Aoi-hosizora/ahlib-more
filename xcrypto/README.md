@@ -27,7 +27,10 @@
 + `func FNV32a(text string) uint32`
 + `func FNV64(text string) uint64`
 + `func FNV64a(text string) uint64`
++ `func FNV128(text string) string`
++ `func FNV128a(text string) string`
 + `func CRC32(text string) uint32`
++ `func CRC64(text string) uint64`
 + `func ADLER32(text string) uint32`
 + `func MD4(text string) string`
 + `func MD5(text string) string`

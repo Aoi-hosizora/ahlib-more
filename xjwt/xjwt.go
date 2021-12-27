@@ -4,7 +4,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-// GenerateToken generates token using given jwt.Claims, secret and jwt.SigningMethod.
+// GenerateToken generates jwt token using given jwt.Claims, secret and jwt.SigningMethod.
 func GenerateToken(method jwt.SigningMethod, claims jwt.Claims, key interface{}) (string, error) {
 	tokenObj := jwt.NewWithClaims(method, claims)
 	token, err := tokenObj.SignedString(key)
@@ -14,22 +14,22 @@ func GenerateToken(method jwt.SigningMethod, claims jwt.Claims, key interface{})
 	return token, nil
 }
 
-// GenerateTokenWithHS256 generates token using given jwt.Claims, secret and HS256 (HMAC SHA256) signing method.
+// GenerateTokenWithHS256 generates token using given jwt.Claims, secret and HS256 (HMAC SHA256, jwt.SigningMethodHS256) signing method.
 func GenerateTokenWithHS256(claims jwt.Claims, secret []byte) (string, error) {
 	return GenerateToken(jwt.SigningMethodHS256, claims, secret)
 }
 
-// GenerateTokenWithHS384 generates token using given jwt.Claims, secret and HS384 (HMAC SHA384) signing method.
+// GenerateTokenWithHS384 generates token using given jwt.Claims, secret and HS384 (HMAC SHA384, jwt.SigningMethodHS384) signing method.
 func GenerateTokenWithHS384(claims jwt.Claims, secret []byte) (string, error) {
 	return GenerateToken(jwt.SigningMethodHS384, claims, secret)
 }
 
-// GenerateTokenWithHS512 generates token using given jwt.Claims, secret and HS512 (HMAC SHA512) signing method.
+// GenerateTokenWithHS512 generates token using given jwt.Claims, secret and HS512 (HMAC SHA512, jwt.SigningMethodHS512) signing method.
 func GenerateTokenWithHS512(claims jwt.Claims, secret []byte) (string, error) {
 	return GenerateToken(jwt.SigningMethodHS512, claims, secret)
 }
 
-// ParseToken parses jwt token string using given custom jwt.Claims and returns jwt.Token.
+// ParseToken parses jwt token string to jwt.Token using given jwt.Claims and secret.
 func ParseToken(signedToken string, secret []byte, claims jwt.Claims) (*jwt.Token, error) {
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		return secret, nil
@@ -41,7 +41,7 @@ func ParseToken(signedToken string, secret []byte, claims jwt.Claims) (*jwt.Toke
 	return tokenObj, nil
 }
 
-// ParseTokenClaims parses jwt token string using given custom jwt.Claims and returns jwt.Claims.
+// ParseTokenClaims parses jwt token string to jwt.Claims using given jwt.Claims and secret.
 func ParseTokenClaims(signedToken string, secret []byte, claims jwt.Claims) (jwt.Claims, error) {
 	tokenObj, err := ParseToken(signedToken, secret, claims)
 	if err != nil {
@@ -50,14 +50,10 @@ func ParseTokenClaims(signedToken string, secret []byte, claims jwt.Claims) (jwt
 	return tokenObj.Claims, nil
 }
 
-// CheckValidationError returns true if given error is jwt.ValidationError with given flag.
+// CheckValidationError returns true if the given error is jwt.ValidationError with given flag.
 func CheckValidationError(err error, flag uint32) bool {
-	if err == nil {
-		return false
-	}
-
 	ve, ok := err.(*jwt.ValidationError)
-	return ok && ve.Errors&flag != 0
+	return ok && (ve.Errors&flag != 0)
 }
 
 // IsAudienceError checks error is an AUD (Audience) validation error.

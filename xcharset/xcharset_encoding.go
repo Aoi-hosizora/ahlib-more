@@ -73,6 +73,8 @@ const (
 
 // GetEncoding returns an encoding.Encoding from some IANA or MIME names.
 func GetEncoding(iana string) (encode encoding.Encoding, exist bool) {
+	// Note: These names must be matched from chardet's detector.go, including utf8.go,
+	// unicode.go, single_byte.go, multi_byte.go, etc.
 	switch iana {
 	// utf8, utf16, utf32
 	case IANA_UTF8:
