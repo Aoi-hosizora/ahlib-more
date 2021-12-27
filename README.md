@@ -22,6 +22,7 @@
 + xjwt
 + xlogger
 + xlogrus
++ xrotation
 
 ### Dependencies
 
