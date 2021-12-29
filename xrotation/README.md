@@ -8,14 +8,12 @@
 
 ### Types
 
-+ `type Clock interface`
 + `type Option func`
 + `type RotationLogger struct`
 
 ### Variables
 
-+ `var UTC Clock`
-+ `var Local Clock`
++ None
 
 ### Constants
 
@@ -25,7 +23,7 @@
 
 + `func WithFilenamePattern(p string) Option`
 + `func WithSymlinkFilename(f string) Option`
-+ `func WithClock(c Clock) Option`
++ `func WithClock(c xtime.Clock) Option`
 + `func WithForceNewFile(b bool) Option`
 + `func WithRotationTime(t time.Duration) Option`
 + `func WithRotationSize(size int64) Option`

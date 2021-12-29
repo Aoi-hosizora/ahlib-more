@@ -4,21 +4,15 @@
 
 + github.com/Aoi-hosizora/ahlib
 + github.com/sirupsen/logrus
-+ github.com/ah-forklib/lumberjack (gopkg.in/natefinch/lumberjack.v2)
-+ github.com/ah-forklib/rotatelogs (github.com/lestrrat-go/file-rotatelogs)
-+ github.com/ah-forklib/strftime (github.com/lestrrat-go/strftime)
 
 ## Documents
 
-### Functions
-
 ### Types
 
++ `type SimpleFormatterOption func`
 + `type SimpleFormatter struct`
-+ `type RotateFileConfig struct`
-+ `type RotateFileHook struct`
-+ `type RotateLogConfig struct`
-+ `type RotateLogHook struct`
++ `type RotationHookOption func`
++ `type RotationHook struct`
 
 ### Variables
 
@@ -30,11 +24,19 @@
 
 ### Functions
 
-+ `func NewRotateFileHook(config *RotateFileConfig) logrus.Hook`
-+ `func NewRotateLogHook(config *RotateLogConfig) logrus.Hook`
++ `func WithTimestampFormat(format string) SimpleFormatterOption`
++ `func WithCallerFormatter(formatter func(*runtime.Frame) (function string, file string)) SimpleFormatterOption`
++ `func WithLevelFormatter(formatter func(logrus.Level) string) SimpleFormatterOption`
++ `func WithDisableColor(disable bool) SimpleFormatterOption`
++ `func WithUseUTCTime(use bool) SimpleFormatterOption`
++ `func NewSimpleFormatter(options ...SimpleFormatterOption) *SimpleFormatter`
++ `func WithRotationLogger(rl *xrotation.RotationLogger) RotationHookOption`
++ `func WithFormatter(formatter logrus.Formatter) RotationHookOption`
++ `func WithLevel(level logrus.Level) RotationHookOption`
++ `func NewRotationHook(options ...RotationHookOption) (logrus.Hook, error)`
 
 ### Methods
 
 + `func (s *SimpleFormatter) Format(entry *logrus.Entry) ([]byte, error)`
-+ `func (r *RotateFileHook) Fire(entry *logrus.Entry) error`
-+ `func (r *RotateLogHook) Fire(entry *logrus.Entry) error`
++ `func (r *RotationHook) Levels() []logrus.Level`
++ `func (r *RotationHook) Fire(entry *logrus.Entry) error`

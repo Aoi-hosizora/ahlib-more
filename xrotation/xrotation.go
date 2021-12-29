@@ -19,7 +19,7 @@ import (
 type loggerOptions struct {
 	filenamePattern string
 	symlinkFilename string
-	nowClock        Clock
+	nowClock        xtime.Clock
 	forceNewFile    bool
 
 	rotationTime     time.Duration
@@ -28,30 +28,7 @@ type loggerOptions struct {
 	rotationMaxCount int32
 }
 
-type (
-	// Clock represents an interface used by RotationLogger to determine the current time.
-	Clock interface{ Now() time.Time }
-
-	// clockFn is an internal type that implements Clock interface.
-	clockFn func() time.Time
-)
-
-// Now implements the Clock interface.
-func (c clockFn) Now() time.Time {
-	return c()
-}
-
-var (
-	_ Clock = (*clockFn)(nil)
-
-	// UTC is an object satisfying the Clock interface, which returns the current time in UTC.
-	UTC Clock = clockFn(func() time.Time { return time.Now().UTC() })
-
-	// Local is an object satisfying the Clock interface, which returns the current time in the local timezone.
-	Local Clock = clockFn(time.Now)
-)
-
-// Option represents an option type for loggerOptions, can be created by WithXXX functions, is used to set up RotationLogger's options.
+// Option represents an option type for RotationLogger's options, can be created by WithXXX functions.
 type Option func(*loggerOptions)
 
 // WithFilenamePattern creates an Option to specific filename pattern for RotationLogger, it is a required option.
@@ -68,16 +45,14 @@ func WithSymlinkFilename(f string) Option {
 	}
 }
 
-// WithClock creates an Option to specific a Clock for RotationLogger, defaults to Local.
-func WithClock(c Clock) Option {
+// WithClock creates an Option to specific a xtime.Clock for RotationLogger, defaults to xtime.Local.
+func WithClock(c xtime.Clock) Option {
 	return func(o *loggerOptions) {
-		if c != nil {
-			o.nowClock = c
-		}
+		o.nowClock = c
 	}
 }
 
-// WithForceNewFile creates an Option to let RotationLogger delete all logger files when New is called, defaults to false.
+// WithForceNewFile creates an Option to let RotationLogger create a new file when write initially, defaults to false.
 func WithForceNewFile(b bool) Option {
 	return func(o *loggerOptions) {
 		o.forceNewFile = b
@@ -87,18 +62,20 @@ func WithForceNewFile(b bool) Option {
 // WithRotationTime creates an Option to specific a rotation time for RotationLogger, defaults to 24 hours.
 func WithRotationTime(t time.Duration) Option {
 	return func(o *loggerOptions) {
-		if t > 0 {
-			o.rotationTime = t
+		if t < 0 {
+			t = 0
 		}
+		o.rotationTime = t
 	}
 }
 
 // WithRotationSize creates an Option to specific a rotation size for RotationLogger, defaults to no limit.
 func WithRotationSize(size int64) Option {
 	return func(o *loggerOptions) {
-		if size > 0 {
-			o.rotationSize = size
+		if size < 0 {
+			size = 0
 		}
+		o.rotationSize = size
 	}
 }
 
@@ -106,26 +83,26 @@ func WithRotationSize(size int64) Option {
 // Notes that maxAge and maxCount cannot be set at the same time.
 func WithRotationMaxAge(age time.Duration) Option {
 	return func(o *loggerOptions) {
-		if age > 0 {
-			o.rotationMaxAge = age
+		if age < 0 {
+			age = 0
 		}
+		o.rotationMaxAge = age
 	}
 }
 
-// WithRotationMaxCount creates an Option to specific rotation loggers' max count for RotationLogger, defaults to no limits, and it cannot less than 1.
-// Notes that maxAge and maxCount cannot be set at the same time.
+// WithRotationMaxCount creates an Option to specific rotation loggers' max count for RotationLogger, defaults to no limits, and it cannot less
+// than 1. Notes that maxAge and maxCount cannot be set at the same time.
 func WithRotationMaxCount(count int32) Option {
 	return func(o *loggerOptions) {
-		if count == 1 {
+		if count < 0 {
 			count = 0
 		}
-		if count > 0 {
-			o.rotationMaxCount = count
-		}
+		o.rotationMaxCount = count
 	}
 }
 
-// RotationLogger represents a rotation logger, which will gets automatically rotated as you write to it.
+// RotationLogger represents a rotation logger, which will gets automatically rotated when new file created. Some codes and interfaces are referred
+// from https://github.com/lestrrat-go/file-rotatelogs.
 type RotationLogger struct {
 	option      *loggerOptions
 	namePattern *strftime.Strftime
@@ -138,14 +115,35 @@ type RotationLogger struct {
 	currFilename   string
 }
 
-// New creates a RotationLogger with given Option-s, notes that if forceNewFile option is set to true, all related logger files will be deleted first.
+var _ io.WriteCloser = (*RotationLogger)(nil)
+
+// New creates a RotationLogger with given Option-s, returns error if you give invalid options.
+//
+// Example:
+// 	rl, err := New(
+// 		WithFilenamePattern("console.%Y%m%d.log"),
+// 		WithSymlinkFilename("console.current.log"),
+// 		WithClock(xtime.UTC),
+// 		WithForceNewFile(false),
+// 		WithRotationSize(20*1024*1024),     // 20M
+// 		WithRotationTime(24*time.Hour),     // 1d
+// 		WithRotationMaxAge(7*24*time.Hour), // 7d
+// 	)
 func New(options ...Option) (*RotationLogger, error) {
-	opt := &loggerOptions{nowClock: Local, rotationTime: 24 * time.Hour}
+	opt := &loggerOptions{}
 	for _, o := range options {
 		if o != nil {
 			o(opt)
 		}
 	}
+	if opt.nowClock == nil {
+		opt.nowClock = xtime.Local
+	}
+	if opt.rotationTime == 0 {
+		opt.rotationTime = 24 * time.Hour
+	}
+
+	// check options
 	if opt.filenamePattern == "" {
 		return nil, errors.New("empty filename pattern is not allowed")
 	}
@@ -162,43 +160,31 @@ func New(options ...Option) (*RotationLogger, error) {
 		return nil, fmt.Errorf("filename pattern `%s` is invalid: %w", opt.filenamePattern, err)
 	}
 	globPattern := xtime.ToGlobPattern(opt.filenamePattern)
-
-	// remove files first if force new file
-	if opt.forceNewFile {
-		matches, err := filepath.Glob(globPattern)
-		if err != nil {
-			return nil, fmt.Errorf("failed to match glob pattern `%s`: %w", globPattern, err)
-		}
-		moreMatches, _ := filepath.Glob(globPattern + "_*")
-		matches = append(matches, moreMatches...)
-		for _, match := range matches {
-			err := os.Remove(match)
-			if err != nil {
-				return nil, fmt.Errorf("failed to remove matched file `%s`: %w", match, err)
-			}
-		}
+	_, err = filepath.Match(globPattern, "")
+	if err != nil {
+		return nil, fmt.Errorf("filename pattern `%s` is invalid: %w", opt.filenamePattern, err)
 	}
 
 	logger := &RotationLogger{option: opt, namePattern: namePattern, globPattern: globPattern}
 	return logger, nil
 }
 
-// Write implements the io.Writer interface, will get rotated writer and do rotate first.
+// Write implements the io.Writer interface, it writes given bytes to file, and does rotation when a new file is created.
 func (r *RotationLogger) Write(p []byte) (n int, err error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	writer, err := r.getRotatedWriter(true)
+	writer, err := r.getRotatedWriter(false) // maybe it is no need to do rotation
 	if err != nil {
 		return 0, err
 	}
 	return writer.Write(p)
 }
 
-// Rotate rotates the logger first manually, returns error when new file is unavailable to get, or rotate failed.
+// Rotate rotates the logger files first manually, returns error when new file is unavailable to get, or rotate failed.
 func (r *RotationLogger) Rotate() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	_, err := r.getRotatedWriter(false)
+	_, err := r.getRotatedWriter(true) // rotation will be done in all cases
 	return err
 }
 
@@ -209,7 +195,7 @@ func (r *RotationLogger) CurrentFilename() string {
 	return r.currFilename
 }
 
-// Close implements the io.Closer interface.
+// Close implements the io.Closer interface, it closes the opened file, you can also call Write later because the closed file will be opened again.
 func (r *RotationLogger) Close() error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -217,7 +203,12 @@ func (r *RotationLogger) Close() error {
 		return nil
 	}
 	_ = r.currFile.Close()
+
+	// initialize all the states
 	r.currFile = nil
+	r.currBasename = ""
+	r.currGeneration = 0
+	r.currFilename = ""
 	return nil
 }
 
@@ -225,87 +216,110 @@ func (r *RotationLogger) Close() error {
 // core implementation
 // ===================
 
+// These unexported variables are only used for testing.
 var (
-	// _t_testHookMkdir is only used for testing RotationLogger.getRotatedWriter.
-	_t_testHookMkdir func()
-
-	// _t_testHookSymlinkMkdir is only used for testing createSymlink.
-	_t_testHookSymlinkMkdir func()
-
-	// _t_testHookSymlinkMkdir2 is only used for testing createSymlink.
-	_t_testHookSymlinkMkdir2 func() string
-
-	// _t_testHookSymlinkMkdir3 is only used for testing createSymlink.
-	_t_testHookSymlinkMkdir3 func()
+	_t_testHookMkdir   func()
+	_t_testHookSymlink [3]func() string
 )
 
 // getRotatedWriter does: check if need to create new file, create a name-non-conflict file, generate a symlink and do rotation.
-func (r *RotationLogger) getRotatedWriter(ignoreRotateError bool) (io.Writer, error) {
+func (r *RotationLogger) getRotatedWriter(rotateManually bool) (io.Writer, error) {
 	// check if need to create new file
-	needCreate := false
+	createNewFile := false
 	generation := r.currGeneration
 	basename := r.namePattern.FormatString(xtime.TruncateTime(r.option.nowClock.Now(), r.option.rotationTime))
-	if r.currBasename == "" || basename != r.currBasename { // initial or new basename
-		needCreate = true
+	if r.currFilename == "" { // write initially
+		fi, err := os.Stat(basename)
+		if existed := !os.IsNotExist(err); !existed || r.option.forceNewFile || (r.option.rotationSize > 0 && fi.Size() >= r.option.rotationSize) {
+			createNewFile = true
+			if existed {
+				generation = 1
+			} else {
+				generation = 0
+			}
+		}
+	} else if basename != r.currBasename { // new basename
+		createNewFile = true
 		generation = 0
-	} else {
+	} else { // check if exceed rotation size
 		fi, err := os.Stat(r.currFilename)
-		if err == nil && r.option.rotationSize > 0 && fi.Size() >= r.option.rotationSize { // exceed rotation size
-			needCreate = true
+		if err == nil && r.option.rotationSize > 0 && fi.Size() >= r.option.rotationSize {
+			createNewFile = true
 			generation++
 		}
 	}
-	if !needCreate {
-		return r.currFile, nil
+
+	// cases the following code deals with:
+	// 1. !createNewFile && currFile != nil && !rotateManually => return directly (happens in most cases)
+	// 1. !createNewFile && currFile != nil && rotateManually  => close the file, open it again, check symlink and do rotate
+	// 2. createNewFile  && currFile != nil                    => create a new file with basename or basename_x (happens when rotation basename changes or file exceeds rotation size)
+	// 3. !createNewFile && currFile == nil                    => open the old file with basename (happens when the first time call this method, with file exists)
+	// 4. createNewFile  && currFile == nil                    => same with 2 (happens when the first time call this method, with file not exists, or forceNewFile, or file size exceeds)
+	filename := basename
+	if !createNewFile && r.currFile != nil {
+		if !rotateManually {
+			// also don't check symlink and do rotation
+			return r.currFile, nil
+		}
+		filename = r.currFilename
+		_ = r.currFile.Close() // close first
+		r.currFile = nil
 	}
 
 	// generate a non-conflict filename
-	filename := basename
-	var tempName string
-	for ; ; generation++ {
-		if generation == 0 {
-			tempName = filename
-		} else {
-			tempName = fmt.Sprintf("%s_%d", filename, generation) // xxx, xxx_1, xxx_2, ...
-		}
-		if _, err := os.Stat(tempName); os.IsNotExist(err) {
-			filename = tempName
-			break
+	if createNewFile {
+		var tempName string
+		for ; ; generation++ {
+			if generation == 0 {
+				tempName = filename
+			} else {
+				tempName = fmt.Sprintf("%s_%d", filename, generation) // xxx, xxx_1, xxx_2, ...
+			}
+			if _, err := os.Stat(tempName); os.IsNotExist(err) {
+				filename = tempName
+				break
+			}
 		}
 	}
 
-	// create a new file
-	dirname := filepath.Dir(filename)
-	if _, err := os.Stat(dirname); os.IsNotExist(err) {
-		if _t_testHookMkdir != nil { // only used when testing
-			_t_testHookMkdir()
-		}
-		err := os.MkdirAll(dirname, 0755) // drwxr-xr-x
-		if err != nil {
-			return nil, fmt.Errorf("failed to create directory `%s`: %w", dirname, err)
+	// open or create the file
+	if createNewFile {
+		dirname := filepath.Dir(filename)
+		if _, err := os.Stat(dirname); os.IsNotExist(err) {
+			if _t_testHookMkdir != nil { // only used when testing
+				_t_testHookMkdir()
+			}
+			err := os.MkdirAll(dirname, 0755) // drwxr-xr-x
+			if err != nil {
+				return nil, fmt.Errorf("failed to create directory `%s`: %w", dirname, err)
+			}
 		}
 	}
 	file, err := os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644) // -rwxr--r--
 	if err != nil {
-		return nil, fmt.Errorf("failed to create file `%s`: %w", filename, err)
+		return nil, fmt.Errorf("failed to open or create file `%s`: %w", filename, err)
 	}
 
 	// generate a symlink and do rotation
 	if r.option.symlinkFilename != "" {
+		// only when need to open or create file
 		err := createSymlink(filename, r.option.symlinkFilename)
 		if err != nil {
-			log.Printf("Warning: failed to create symlink for `%s`: %v", filename, err)
 			// ignore error, especially on Windows: "A required privilege is not held by the client"
+			log.Printf("Warning: failed to create symlink for `%s`: %v", filename, err)
 		}
 	}
-	err = r.doRotation()
-	if err != nil {
-		err = fmt.Errorf("failed to rotate on pattern `%s`: %w", r.globPattern, err)
-		if ignoreRotateError {
-			log.Printf("Warning: %v", err) // ignore error
-		} else {
-			_ = file.Close()
-			return nil, err
+	if createNewFile || rotateManually {
+		// only when need to create a new file or rotate manually
+		err := doRotation(r.globPattern, r.option.nowClock.Now(), r.option.rotationMaxAge, r.option.rotationMaxCount) // error returned from os.Remove
+		if err != nil {
+			err = fmt.Errorf("failed to rotate: [%w]", err)
+			if !rotateManually {
+				log.Printf("Warning: %v", err) // ignore rotation error
+			} else {
+				_ = file.Close()
+				return nil, err
+			}
 		}
 	}
 
@@ -324,8 +338,8 @@ func createSymlink(filename, linkname string) error {
 	// create target link file directory
 	linkDirname := filepath.Dir(linkname)
 	if _, err := os.Stat(linkDirname); os.IsNotExist(err) {
-		if _t_testHookSymlinkMkdir != nil {
-			_t_testHookSymlinkMkdir()
+		if _t_testHookSymlink[0] != nil { // only used when testing
+			_t_testHookSymlink[0]()
 		}
 		err := os.MkdirAll(linkDirname, 0755)
 		if err != nil {
@@ -339,8 +353,8 @@ func createSymlink(filename, linkname string) error {
 		destinationPath, _ := filepath.Abs(destination)
 		linkDirnamePath, _ := filepath.Abs(linkDirname)
 		var err error
-		if _t_testHookSymlinkMkdir2 != nil {
-			linkDirnamePath = _t_testHookSymlinkMkdir2()
+		if _t_testHookSymlink[1] != nil {
+			linkDirnamePath = _t_testHookSymlink[1]()
 		}
 		destination, err = filepath.Rel(linkDirnamePath, destinationPath)
 		if err != nil {
@@ -353,8 +367,8 @@ func createSymlink(filename, linkname string) error {
 	if _, err := os.Stat(tempLinkname); err == nil {
 		_ = os.Remove(tempLinkname)
 	}
-	if _t_testHookSymlinkMkdir3 != nil {
-		_t_testHookSymlinkMkdir3()
+	if _t_testHookSymlink[2] != nil {
+		_t_testHookSymlink[2]()
 	}
 	err := os.Symlink(destination, tempLinkname)
 	if err != nil {
@@ -368,36 +382,32 @@ func createSymlink(filename, linkname string) error {
 }
 
 // doRotation does the real rotation work, this will rotate for loggers' max age or for loggers' max count, and remove all unlinked files.
-func (r *RotationLogger) doRotation() error {
+func doRotation(globPattern string, now time.Time, maxAge time.Duration, maxCount int32) error {
 	// get matches by glob pattern
-	matches, err := filepath.Glob(r.globPattern)
-	if err != nil {
-		return fmt.Errorf("failed to match glob pattern `%s`: %w", r.globPattern, err)
-	}
+	matches, _ := filepath.Glob(globPattern) // if you don't use in an unsafe manner, it will not return error
 	unlinkFiles := make([]string, 0)
 
 	// I) rotate for max age
-	if r.option.rotationMaxAge > 0 {
-		cutoffDuration := r.option.nowClock.Now().Add(-1 * r.option.rotationMaxAge)
+	if maxAge > 0 {
+		cutoffDuration := now.Add(-1 * maxAge)
 		for _, match := range matches {
 			fi, err := os.Lstat(match)
 			if err != nil || (fi.Mode()&os.ModeSymlink) == os.ModeSymlink {
 				continue
 			}
-			if r.option.rotationMaxAge > 0 && fi.ModTime().After(cutoffDuration) {
-				continue
+			if fi.ModTime().Before(cutoffDuration) {
+				unlinkFiles = append(unlinkFiles, match)
 			}
-			unlinkFiles = append(unlinkFiles, match)
 		}
 	}
 
 	// II) rotate for max count
-	if count := int(r.option.rotationMaxCount); count > 0 {
+	if count := int(maxCount); count > 0 {
 		type nameTimeTuple struct {
 			name string
 			mod  time.Time
 		}
-		matchesFileInfos := make([]nameTimeTuple, 0)
+		matchesFileInfos := make([]nameTimeTuple, 0, len(matches))
 		for _, match := range matches {
 			fi, err := os.Lstat(match)
 			if err != nil || (fi.Mode()&os.ModeSymlink) == os.ModeSymlink {
@@ -415,26 +425,36 @@ func (r *RotationLogger) doRotation() error {
 		}
 	}
 
-	// add moreUnlinkFiles according unlinkFiles
+	// generate moreUnlinkFiles according to unlinkFiles
 	if len(unlinkFiles) == 0 {
 		return nil
 	}
-	moreMatches, _ := filepath.Glob(r.globPattern + "_*")
+	moreMatches, _ := filepath.Glob(globPattern + "_*") // also ignore error returned from filepath.Glob
 	moreUnlinkFiles := make([]string, 0)
-	for _, path := range unlinkFiles {
-		for _, match := range moreMatches {
-			if strings.HasPrefix(match, path) {
-				moreUnlinkFiles = append(moreUnlinkFiles, match)
+	if len(moreMatches) > 0 {
+		for _, path := range unlinkFiles {
+			for _, match := range moreMatches {
+				if strings.HasPrefix(match, path) {
+					moreUnlinkFiles = append(moreUnlinkFiles, match)
+				}
 			}
 		}
 	}
 
 	// remove unlinked files
+	errs := make([]error, 0)
 	for _, path := range append(unlinkFiles, moreUnlinkFiles...) {
 		err := os.Remove(path)
 		if err != nil {
-			log.Printf("Warning: failed to remove file `%s`: %v", path, err) // ignore error
+			errs = append(errs, err)
 		}
 	}
-	return nil
+	if len(errs) == 0 {
+		return nil
+	}
+	msgs := make([]string, 0, len(errs))
+	for _, err := range errs {
+		msgs = append(msgs, err.Error())
+	}
+	return fmt.Errorf("[%s]", strings.Join(msgs, "; "))
 }
