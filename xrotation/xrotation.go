@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Aoi-hosizora/ahlib/xtime"
-	"github.com/ah-forklib/strftime"
 	"io"
 	"log"
 	"os"
@@ -105,7 +104,7 @@ func WithRotationMaxCount(count int32) Option {
 // from https://github.com/lestrrat-go/file-rotatelogs.
 type RotationLogger struct {
 	option      *loggerOptions
-	namePattern *strftime.Strftime
+	namePattern string
 	globPattern string
 
 	mu             sync.RWMutex
@@ -154,18 +153,18 @@ func New(options ...Option) (*RotationLogger, error) {
 		opt.rotationMaxAge = 7 * 24 * time.Hour
 	}
 
-	// parse filename pattern
-	namePattern, err := xtime.NewStrftime(opt.filenamePattern)
+	// test filename pattern
+	_, err := xtime.StrftimeInString(opt.filenamePattern, time.Now())
 	if err != nil {
 		return nil, fmt.Errorf("filename pattern `%s` is invalid: %w", opt.filenamePattern, err)
 	}
-	globPattern := xtime.ToGlobPattern(opt.filenamePattern)
+	globPattern := xtime.StrftimeToGlobPattern(opt.filenamePattern)
 	_, err = filepath.Match(globPattern, "")
 	if err != nil {
 		return nil, fmt.Errorf("filename pattern `%s` is invalid: %w", opt.filenamePattern, err)
 	}
 
-	logger := &RotationLogger{option: opt, namePattern: namePattern, globPattern: globPattern}
+	logger := &RotationLogger{option: opt, namePattern: opt.filenamePattern, globPattern: globPattern}
 	return logger, nil
 }
 
@@ -227,7 +226,7 @@ func (r *RotationLogger) getRotatedWriter(rotateManually bool) (io.Writer, error
 	// check if need to create new file
 	createNewFile := false
 	generation := r.currGeneration
-	basename := r.namePattern.FormatString(xtime.TruncateTime(r.option.nowClock.Now(), r.option.rotationTime))
+	basename, _ := xtime.StrftimeInString(r.namePattern, xtime.TruncateTime(r.option.nowClock.Now(), r.option.rotationTime))
 	if r.currFilename == "" { // write initially
 		fi, err := os.Stat(basename)
 		if existed := !os.IsNotExist(err); !existed || r.option.forceNewFile || (r.option.rotationSize > 0 && fi.Size() >= r.option.rotationSize) {
@@ -250,11 +249,11 @@ func (r *RotationLogger) getRotatedWriter(rotateManually bool) (io.Writer, error
 	}
 
 	// cases the following code deals with:
-	// 1. !createNewFile && currFile != nil && !rotateManually => return directly (happens in most cases)
-	// 1. !createNewFile && currFile != nil && rotateManually  => close the file, open it again, check symlink and do rotate
-	// 2. createNewFile  && currFile != nil                    => create a new file with basename or basename_x (happens when rotation basename changes or file exceeds rotation size)
-	// 3. !createNewFile && currFile == nil                    => open the old file with basename (happens when the first time call this method, with file exists)
-	// 4. createNewFile  && currFile == nil                    => same with 2 (happens when the first time call this method, with file not exists, or forceNewFile, or file size exceeds)
+	// 1.1. !createNewFile && currFile != nil && !rotateManually => return directly (happens in most cases)
+	// 1.2. !createNewFile && currFile != nil && rotateManually  => close the file, open it again, check symlink and do rotate (happens when called Rotate())
+	// 2.   createNewFile  && currFile != nil                    => create a new file with basename or basename_x (happens when rotation basename changes or file exceeds rotation size)
+	// 3.   !createNewFile && currFile == nil                    => open the old file with basename (happens when the first time call this method, with file exists)
+	// 4.   createNewFile  && currFile == nil                    => same with 2 (happens when the first time call this method, with file not exists, or forceNewFile, or file size exceeds)
 	filename := basename
 	if !createNewFile && r.currFile != nil {
 		if !rotateManually {
