@@ -5,8 +5,9 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/Aoi-hosizora/ahlib-more)](https://goreportcard.com/report/github.com/Aoi-hosizora/ahlib-more)
 [![License](http://img.shields.io/badge/license-mit-blue.svg)](./LICENSE)
 [![Release](https://img.shields.io/github/v/release/Aoi-hosizora/ahlib-more)](https://github.com/Aoi-hosizora/ahlib-more/releases)
+[![Go Reference](https://pkg.go.dev/badge/github.com/Aoi-hosizora/ahlib-more.svg)](https://pkg.go.dev/github.com/Aoi-hosizora/ahlib-more)
 
-+ A personal golang library with some common libraries, split from [Aoi-hosizora/ahlib](https://github.com/Aoi-hosizora/ahlib), require `Go >= 1.15`.
++ A personal golang library with some common and small utilities, is the extension library of [Aoi-hosizora/ahlib](https://github.com/Aoi-hosizora/ahlib), require `Go >= 1.15`.
 
 ### Related libraries
 

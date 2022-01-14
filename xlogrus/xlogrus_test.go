@@ -29,19 +29,21 @@ func TestSimpleFormatter(t *testing.T) {
 	}{
 		{NewSimpleFormatter(), false, func(l *logrus.Entry) { l.Trace("test") },
 			"\x1b[37mTRAC\x1b[0m [2021-12-29T18:16:13+08:00] test\n"},
-		{NewSimpleFormatter(WithTimestampFormat("")), false, func(l *logrus.Entry) { l.Debug("test") },
+		{NewSimpleFormatter(WithTimestampFormat("")), false, func(l *logrus.Entry) { l.Buffer = nil; l.Debug("test") },
 			"\x1b[37mDEBU\x1b[0m [2021-12-29T18:16:13+08:00] test\n"},
 		{NewSimpleFormatter(WithTimestampFormat("2006-01-02 15:04:05")), false, func(l *logrus.Entry) { l.Info("test") },
 			"\x1b[34mINFO\x1b[0m [2021-12-29 18:16:13] test\n"},
-		{NewSimpleFormatter(WithUseUTCTime(true)), false, func(l *logrus.Entry) { l.Warn("test") },
+		{NewSimpleFormatter(WithTimeLocation(time.UTC)), false, func(l *logrus.Entry) { l.Warn("test") },
 			"\x1b[33mWARN\x1b[0m [2021-12-29T10:16:13Z] test\n"},
+		{NewSimpleFormatter(WithTimeLocation(time.FixedZone("", -2*60*60))), false, func(l *logrus.Entry) { l.Warn("test") },
+			"\x1b[33mWARN\x1b[0m [2021-12-29T08:16:13-02:00] test\n"},
 		{NewSimpleFormatter(WithDisableColor(false)), false, func(l *logrus.Entry) { l.Error("test") },
 			"\x1b[31mERRO\x1b[0m [2021-12-29T18:16:13+08:00] test\n"},
-		{NewSimpleFormatter(WithTimestampFormat("2006-01-02"), WithDisableColor(true), WithUseUTCTime(false)), false, func(l *logrus.Entry) { l.Panic("test") },
+		{NewSimpleFormatter(WithTimestampFormat("2006-01-02"), WithDisableColor(true), WithTimeLocation(time.Local)), false, func(l *logrus.Entry) { l.Panic("test") },
 			"PANI [2021-12-29] test\n"},
 
 		{NewSimpleFormatter(), true, func(l *logrus.Entry) { l.Trace("test") },
-			"\x1b[37mTRAC\x1b[0m [2021-12-29T18:16:13+08:00] \x1b[2mxlogrus_test.go:43 xlogrus.TestSimpleFormatter.func7()\x1b[0m > test\n"},
+			"\x1b[37mTRAC\x1b[0m [2021-12-29T18:16:13+08:00] \x1b[2mxlogrus_test.go:45 xlogrus.TestSimpleFormatter.func8()\x1b[0m > test\n"},
 		{NewSimpleFormatter(WithCallerFormatter(func(*runtime.Frame) (string, string) { return "", "" })), true, func(l *logrus.Entry) { l.Debug("test") },
 			"\x1b[37mDEBU\x1b[0m [2021-12-29T18:16:13+08:00] test\n"},
 		{NewSimpleFormatter(WithCallerFormatter(func(*runtime.Frame) (string, string) { return "", "fn()" }), WithDisableColor(true)), true, func(l *logrus.Entry) { l.Info("test") },
@@ -52,7 +54,7 @@ func TestSimpleFormatter(t *testing.T) {
 		{NewSimpleFormatter(WithLevelFormatter(func(l logrus.Level) string { return l.String() })), false, func(l *logrus.Entry) { l.Trace("test") },
 			"\x1b[37mtrace\x1b[0m [2021-12-29T18:16:13+08:00] test\n"},
 		{NewSimpleFormatter(WithLevelFormatter(func(l logrus.Level) string { return "" })), false, func(l *logrus.Entry) { l.Debug("test") },
-			"\x1b[37mDEBU\x1b[0m [2021-12-29T18:16:13+08:00] test\n"},
+			"\x1b[37m\x1b[0m [2021-12-29T18:16:13+08:00] test\n"},
 		{NewSimpleFormatter(WithLevelFormatter(func(l logrus.Level) string { return l.String()[:1] })), false, func(l *logrus.Entry) { l.Info("test") },
 			"\x1b[34mi\x1b[0m [2021-12-29T18:16:13+08:00] test\n"},
 		{NewSimpleFormatter(WithLevelFormatter(func(l logrus.Level) string { return strings.ToUpper(l.String())[:1] }), WithDisableColor(true)), false, func(l *logrus.Entry) { l.Error("test") },
@@ -61,7 +63,7 @@ func TestSimpleFormatter(t *testing.T) {
 		{NewSimpleFormatter(WithMessageFormatter(func(l, t, c, m string) string { return fmt.Sprintf("%s %s: %s\n", t, l, m) }), WithTimestampFormat("2006-01-02 15:04:05")), false, func(l *logrus.Entry) { l.Trace("test") },
 			"2021-12-29 18:16:13 \x1b[37mTRAC\x1b[0m: test\n"},
 		{NewSimpleFormatter(WithMessageFormatter(func(l, t, c, m string) string { return "" })), false, func(l *logrus.Entry) { l.Debug("test") },
-			"\x1b[37mDEBU\x1b[0m [2021-12-29T18:16:13+08:00] test\n"},
+			""},
 		{NewSimpleFormatter(WithMessageFormatter(func(l, t, c, m string) string { return fmt.Sprintf("[%s] [%s] %s\n", t, l, m) }), WithDisableColor(true)), false, func(l *logrus.Entry) { l.Info("test") },
 			"[2021-12-29T18:16:13+08:00] [INFO] test\n"},
 		{NewSimpleFormatter(WithMessageFormatter(func(l, t, c, m string) string { return fmt.Sprintf("%s[%s] %s\n", l, t, m) }), WithLevelFormatter(func(l logrus.Level) string { return strings.ToUpper(l.String())[:1] })), false, func(l *logrus.Entry) { l.Warn("test") },
@@ -102,23 +104,51 @@ func TestLogrusFormatters(t *testing.T) {
 		{RFC3339JsonFormatter(), (*logrus.Entry).Warn, logrus.Fields{"empty": ""}, "hello world 3", false,
 			`{"@@time":"2022-01-20T14:56:20.123456789+08:00","@level":"warning","@message":"hello world 3","entries":{"empty":""}}`},
 		{RFC3339JsonFormatter(), (*logrus.Entry).Error, logrus.Fields{"i": 123, "f": 3.14}, "hello world 4", true,
-			`{"@@time":"2022-01-20T14:56:20.123456789+08:00","@level":"error","@message":"hello world 4","entries":{"f":3.14,"i":123}`},
+			`{"@@time":"2022-01-20T14:56:20.123456789+08:00","@level":"error","@message":"hello world 4","entries":{"f":3.14,"i":123},`},
 
-		{RFC3339ColoredTextFormatter(), (*logrus.Entry).Debug, logrus.Fields{}, "hello world 1", false, ""},
-		{RFC3339ColoredTextFormatter(), (*logrus.Entry).Info, logrus.Fields{"key": "v"}, "hello world 2", false, ""},
-		{RFC3339ColoredTextFormatter(), (*logrus.Entry).Warn, logrus.Fields{"empty": ""}, "hello world 3", false, ""},
-		{RFC3339ColoredTextFormatter(), (*logrus.Entry).Error, logrus.Fields{"i": 123, "f": 3.14}, "hello world 4", true, ""},
+		{RFC3339ColoredTextFormatter(), (*logrus.Entry).Debug, logrus.Fields{}, "hello world 1", false, "\x1b[37mDEBU\x1b[0m[2022-01-20T14:56:20+08:00] hello world 1"},
+		{RFC3339ColoredTextFormatter(), (*logrus.Entry).Info, logrus.Fields{"key": "v"}, "hello world 2", false, "\x1b[36mINFO\x1b[0m[2022-01-20T14:56:20+08:00] hello world 2                                 \x1b[36mkey\x1b[0m=\"v\""},
+		{RFC3339ColoredTextFormatter(), (*logrus.Entry).Warn, logrus.Fields{"empty": ""}, "hello world 3", false, "\x1b[33mWARN\x1b[0m[2022-01-20T14:56:20+08:00] hello world 3                                 \x1b[33mempty\x1b[0m=\"\""},
+		{RFC3339ColoredTextFormatter(), (*logrus.Entry).Error, logrus.Fields{"i": 123, "f": 3.14}, "hello world 4", false, "\x1b[31mERRO\x1b[0m[2022-01-20T14:56:20+08:00] hello world 4                                 \x1b[31mf\x1b[0m=\"3.14\" \x1b[31mi\x1b[0m=\"123\""},
 	} {
 		t.Run(tc.giveMsg, func(t *testing.T) {
 			l.SetFormatter(tc.giveFmt)
 			l.SetReportCaller(tc.giveReport)
 
 			sb.Reset()
-			tc.giveFunc(l.WithTime(d).WithFields(tc.giveFields), tc.giveMsg)
+			entry := l.WithTime(d).WithFields(tc.giveFields)
+			tc.giveFunc(entry, tc.giveMsg)
 			l.SetReportCaller(false)
 			xtesting.Equal(t, sb.String()[:len(tc.want)], tc.want)
 		})
 	}
+
+	t.Run("caller", func(t *testing.T) {
+		entry := l.WithTime(d)
+		entry.Level = logrus.DebugLevel
+		entry.Message = "xxx"
+		entry.Caller = &runtime.Frame{
+			Function: "github.com/aaa/bbb.ccc.ddd",
+			File:     "aaa/bbb/ccc.go",
+			Line:     99,
+		}
+		l.SetReportCaller(true)
+		entry.Logger = l
+
+		// 1.
+		fmt1 := RFC3339JsonFormatter()
+		bs, err := fmt1.Format(entry)
+		_, _ = os.Stdout.Write(bs)
+		xtesting.Nil(t, err)
+		xtesting.Equal(t, string(bs), "{\"@@time\":\"2022-01-20T14:56:20.123456789+08:00\",\"@level\":\"debug\",\"@message\":\"xxx\",\"entries\":{},\"file\":\"aaa/bbb/ccc.go:99\",\"function\":\"github.com/aaa/bbb.ccc.ddd\"}\n")
+
+		// 2.
+		fmt2 := RFC3339ColoredTextFormatter()
+		bs, err = fmt2.Format(entry)
+		_, _ = os.Stdout.Write(bs)
+		xtesting.Nil(t, err)
+		xtesting.Equal(t, string(bs), "\x1b[37mDEBU\x1b[0m[2022-01-20T14:56:20+08:00]ccc.go:99 bbb.ccc.ddd() xxx                                          \n")
+	})
 }
 
 func TestRotationHook(t *testing.T) {
@@ -128,9 +158,9 @@ func TestRotationHook(t *testing.T) {
 	l.SetOutput(os.Stdout)
 
 	type Os = []RotationHookOption
-	rl, err := xrotation.New(xrotation.WithFilenamePattern("logger.log"))
+	rl, err := xrotation.New("logger.log")
 	xtesting.Nil(t, err)
-	rl2, err := xrotation.New(xrotation.WithFilenamePattern("console.log"))
+	rl2, err := xrotation.New("console.log")
 	xtesting.Nil(t, err)
 
 	for _, tc := range []struct {
@@ -152,7 +182,7 @@ func TestRotationHook(t *testing.T) {
 			false, logrus.AllLevels[:logrus.WarnLevel+1], "", ""},
 		{rl, Os{WithRotateFormatter(&logrus.TextFormatter{DisableColors: true})}, func(l *logrus.Entry) { l.Warn("test") },
 			false, logrus.AllLevels[:logrus.WarnLevel+1], "logger.log", "time=\"2021-12-29T18:16:13+08:00\" level=warning msg=test key=value\n"},
-		{rl2, Os{WithRotateLevel(999999), WithRotateFormatter(NewSimpleFormatter(WithDisableColor(true)))}, func(l *logrus.Entry) { l.Panic("test") },
+		{rl2, Os{WithRotateLevel(99999), WithRotateFormatter(NewSimpleFormatter(WithDisableColor(true)))}, func(l *logrus.Entry) { l.Panic("test") },
 			false, []logrus.Level{logrus.PanicLevel}, "console.log", "PANI [2021-12-29T18:16:13+08:00] test\n"},
 	} {
 		if tc.wantPanic {
@@ -183,10 +213,10 @@ func TestRotationHook(t *testing.T) {
 		}
 
 		if o := hook.rotation; o != nil {
-			_ = o.Close()
+			xtesting.Nil(t, o.Close())
 		}
 		if tc.wantFilename != "" {
-			_ = os.Remove(tc.wantFilename)
+			xtesting.Nil(t, os.Remove(tc.wantFilename))
 		}
 	}
 }

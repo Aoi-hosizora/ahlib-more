@@ -14,26 +14,27 @@ import (
 
 func TestOptions(t *testing.T) {
 	t.Run("errors", func(t *testing.T) {
-		_, err := New()
+		_, err := New("")
 		xtesting.NotNil(t, err)
-		_, err = New(WithFilenamePattern("test.log"))
+		_, err = New("test.log")
 		xtesting.Nil(t, err)
-		_, err = New(WithFilenamePattern("test.log%"))
+		_, err = New("test.log%")
 		xtesting.NotNil(t, err)
-		_, err = New(WithFilenamePattern("[x-]"), WithForceNewFile(true))
+		_, err = New("[x-]", WithForceNewFile(true))
 		xtesting.NotNil(t, err)
-		_, err = New(WithFilenamePattern("test.log"), WithRotationMaxAge(1), WithRotationMaxCount(0))
+		_, err = New("test.log", WithRotationMaxAge(1), WithRotationMaxCount(0))
 		xtesting.Nil(t, err)
-		_, err = New(WithFilenamePattern("test.log"), WithRotationMaxAge(0), WithRotationMaxCount(1))
+		_, err = New("test.log", WithRotationMaxAge(0), WithRotationMaxCount(1))
 		xtesting.Nil(t, err)
-		_, err = New(WithFilenamePattern("test.log"), WithRotationMaxAge(1), WithRotationMaxCount(1))
+		_, err = New("test.log", WithRotationMaxAge(1), WithRotationMaxCount(1))
 		xtesting.NotNil(t, err)
 	})
 
 	t.Run("values", func(t *testing.T) {
-		rl, err := New(WithFilenamePattern(""), WithFilenamePattern("test.log"))
+		rl, err := New("test.log")
 		xtesting.Nil(t, err)
-		xtesting.Equal(t, rl.option.filenamePattern, "test.log")
+		xtesting.Equal(t, rl.namePattern, "test.log")
+		xtesting.Equal(t, rl.globPattern, "test.log")
 		xtesting.Equal(t, rl.option.symlinkFilename, "")
 		xtesting.Equal(t, xtime.LocationDuration(rl.option.nowClock.Now().Location()), xtime.LocationDuration(time.Local))
 		xtesting.Equal(t, rl.option.forceNewFile, false)
@@ -43,11 +44,12 @@ func TestOptions(t *testing.T) {
 		xtesting.Equal(t, rl.option.rotationMaxCount, int32(0))
 
 		rl, err = New(
-			WithFilenamePattern("test.log"), WithSymlinkFilename(""), WithSymlinkFilename("test.curr.log"), WithClock(nil),
+			"x", WithSymlinkFilename(""), WithSymlinkFilename("test.curr.log"), WithClock(nil),
 			WithForceNewFile(false), WithRotationTime(-1), WithRotationSize(-1), WithRotationMaxAge(-1), WithRotationMaxCount(-1),
 		)
 		xtesting.Nil(t, err)
-		xtesting.Equal(t, rl.option.filenamePattern, "test.log")
+		xtesting.Equal(t, rl.namePattern, "x")
+		xtesting.Equal(t, rl.globPattern, "x")
 		xtesting.Equal(t, rl.option.symlinkFilename, "test.curr.log")
 		xtesting.Equal(t, xtime.LocationDuration(rl.option.nowClock.Now().Location()), xtime.LocationDuration(time.Local))
 		xtesting.Equal(t, rl.option.forceNewFile, false)
@@ -57,11 +59,12 @@ func TestOptions(t *testing.T) {
 		xtesting.Equal(t, rl.option.rotationMaxCount, int32(0))
 
 		rl, err = New(
-			WithFilenamePattern("test.log"), WithSymlinkFilename(""), WithClock(xtime.UTC), WithForceNewFile(true),
+			"test-%Y%m%d.log", WithSymlinkFilename(""), WithClock(xtime.UTC), WithForceNewFile(true),
 			WithRotationTime(time.Hour), WithRotationSize(256), WithRotationMaxAge(time.Hour*15*24), WithRotationMaxCount(0),
 		)
 		xtesting.Nil(t, err)
-		xtesting.Equal(t, rl.option.filenamePattern, "test.log")
+		xtesting.Equal(t, rl.namePattern, "test-%Y%m%d.log")
+		xtesting.Equal(t, rl.globPattern, "test-*.log")
 		xtesting.Equal(t, rl.option.symlinkFilename, "")
 		xtesting.Equal(t, xtime.LocationDuration(rl.option.nowClock.Now().Location()), time.Duration(0))
 		xtesting.Equal(t, rl.option.forceNewFile, true)
@@ -115,10 +118,10 @@ func TestSimpleWrite(t *testing.T) {
 		now := time.Date(2001, 1, 1, 0, 0, 0, 0, time.FixedZone("", 8*60*60))
 		pNow := &now
 		clock := xtime.CustomClock(pNow)
-		rl, _ := New(WithFilenamePattern("logger.%Y%m%d.log"), WithRotationTime(time.Hour*24), WithClock(clock))
+		rl, _ := New("logger.%Y%m%d.log", WithRotationTime(time.Hour*24), WithClock(clock))
 		xtesting.Nil(t, rl.Close()) // <- r.currFile == nil
 
-		rl, _ = New(WithFilenamePattern("logger.%Y%m%d.log"), WithRotationTime(time.Hour*24), WithClock(clock))
+		rl, _ = New("logger.%Y%m%d.log", WithRotationTime(time.Hour*24), WithClock(clock))
 		_, err := fmt.Fprintf(rl, "hello world 1") // <- create a new file, logger.01.log
 		xtesting.Nil(t, err)
 		testFileExistence(t, "logger.20010101.log", true)
@@ -136,9 +139,9 @@ func TestSimpleWrite(t *testing.T) {
 		testFileContent(t, "logger.20020202.log", "hello world 2hello world 3")
 		xtesting.Nil(t, rl.Close()) // normal close
 		xtesting.Nil(t, rl.currFile)
-		xtesting.Empty(t, rl.currBasename)
-		xtesting.Empty(t, rl.currGeneration)
-		xtesting.Empty(t, rl.currFilename)
+		xtesting.Zero(t, rl.currBasename)
+		xtesting.Zero(t, rl.currGeneration)
+		xtesting.Zero(t, rl.currFilename)
 		_, err = fmt.Fprintf(rl, "hello world 4") // <- normally use logger.02.log
 		testFileContent(t, "logger.20020202.log", "hello world 2hello world 3hello world 4")
 		xtesting.Nil(t, rl.Close()) // normal close
@@ -148,14 +151,14 @@ func TestSimpleWrite(t *testing.T) {
 		removeLoggers()
 		defer removeLoggers()
 
-		rl, _ := New(WithFilenamePattern("logger.log"), WithRotationTime(time.Hour*24), WithRotationSize(15), WithForceNewFile(false))
+		rl, _ := New("logger.log", WithRotationTime(time.Hour*24), WithRotationSize(15), WithForceNewFile(false))
 		_, err := fmt.Fprintf(rl, "hello world 1\n") // <- 14, create logger.log
 		xtesting.Nil(t, err)
 		testFileExistence(t, "logger.log", true)
 		testFileContent(t, "logger.log", "hello world 1\n")
 		xtesting.Nil(t, rl.Close())
 
-		rl, _ = New(WithFilenamePattern("logger.log"), WithRotationTime(time.Hour*24), WithRotationSize(15), WithForceNewFile(false))
+		rl, _ = New("logger.log", WithRotationTime(time.Hour*24), WithRotationSize(15), WithForceNewFile(false))
 		_, err = fmt.Fprintf(rl, "hello world 2\n") // <- use logger.log
 		xtesting.Nil(t, err)
 		testFileExistence(t, "logger.log", true)
@@ -163,7 +166,7 @@ func TestSimpleWrite(t *testing.T) {
 		testFileContent(t, "logger.log", "hello world 1\nhello world 2\n")
 		xtesting.Nil(t, rl.Close())
 
-		rl, _ = New(WithFilenamePattern("logger.log"), WithRotationTime(time.Hour*24), WithRotationSize(15), WithForceNewFile(false))
+		rl, _ = New("logger.log", WithRotationTime(time.Hour*24), WithRotationSize(15), WithForceNewFile(false))
 		_, err = fmt.Fprintf(rl, "hello world 3\n") // <- create logger.log_1
 		xtesting.Nil(t, err)
 		testFileExistence(t, "logger.log_1", true)
@@ -172,7 +175,7 @@ func TestSimpleWrite(t *testing.T) {
 		testFileContent(t, "logger.log_1", "hello world 3\n")
 		xtesting.Nil(t, rl.Close())
 
-		rl, _ = New(WithFilenamePattern("logger.log"), WithRotationTime(time.Hour*24), WithRotationSize(15), WithForceNewFile(true))
+		rl, _ = New("logger.log", WithRotationTime(time.Hour*24), WithRotationSize(15), WithForceNewFile(true))
 		_, err = fmt.Fprintf(rl, "hello world 4\n") // <- create logger.log_2
 		xtesting.Nil(t, err)
 		testFileExistence(t, "logger.log_2", true)
@@ -188,7 +191,7 @@ func TestWrite(t *testing.T) {
 		removeLoggers()
 		defer removeLoggers()
 
-		rl, _ := New(WithFilenamePattern("logger.log"), WithRotationSize(15))
+		rl, _ := New("logger.log", WithRotationSize(15))
 		xtesting.Equal(t, rl.CurrentFilename(), "")
 		_, err := fmt.Fprintf(rl, "hello world 1\n") // <- 14, create logger.log
 		xtesting.Nil(t, err)
@@ -213,7 +216,7 @@ func TestWrite(t *testing.T) {
 		xtesting.Equal(t, rl.CurrentFilename(), "logger.log_1")
 		xtesting.Nil(t, rl.Close())
 
-		rl, _ = New(WithFilenamePattern("logger.log"), WithRotationSize(29))
+		rl, _ = New("logger.log", WithRotationSize(29))
 		xtesting.Equal(t, rl.CurrentFilename(), "")
 		_, err = fmt.Fprintf(rl, "hello world 4\n") // <- use logger.log
 		xtesting.Nil(t, err)
@@ -234,7 +237,7 @@ func TestWrite(t *testing.T) {
 		xtesting.Equal(t, rl.CurrentFilename(), "logger.log_2")
 		xtesting.Nil(t, rl.Close())
 
-		rl, _ = New(WithFilenamePattern("logger.log"), WithRotationSize(29))
+		rl, _ = New("logger.log", WithRotationSize(29))
 		xtesting.Equal(t, rl.CurrentFilename(), "")
 		_, err = fmt.Fprintf(rl, "hello world 6\n") // <- create: logger.log_3
 		xtesting.Nil(t, err)
@@ -250,7 +253,7 @@ func TestWrite(t *testing.T) {
 		removeLoggers()
 		defer removeLoggers()
 
-		rl, _ := New(WithFilenamePattern("logger.log"), WithRotationSize(15))
+		rl, _ := New("logger.log", WithRotationSize(15))
 		xtesting.Nil(t, rl.Rotate()) // <- create logger.log
 		testFileExistence(t, "logger.log", true)
 		testFileContent(t, "logger.log", "")
@@ -262,7 +265,7 @@ func TestWrite(t *testing.T) {
 		xtesting.Equal(t, rl.CurrentFilename(), "logger.log")
 		xtesting.Nil(t, rl.Close())
 
-		rl, _ = New(WithFilenamePattern("logger.log"), WithRotationSize(15))
+		rl, _ = New("logger.log", WithRotationSize(15))
 		xtesting.Nil(t, rl.Rotate()) // <- use logger.log
 		testFileExistence(t, "logger.log", true)
 		testFileExistence(t, "logger.log_1", false)
@@ -284,7 +287,7 @@ func TestWrite(t *testing.T) {
 		testFileContent(t, "logger.log_1", "") // <- empty logger.log_1
 		xtesting.Nil(t, rl.Close())
 
-		rl, _ = New(WithFilenamePattern("logger.log"), WithRotationSize(15))
+		rl, _ = New("logger.log", WithRotationSize(15))
 		xtesting.Nil(t, rl.Rotate()) // <- create logger.log_2
 		testFileExistence(t, "logger.log_1", true)
 		testFileExistence(t, "logger.log_2", true)
@@ -304,7 +307,7 @@ func TestRotate(t *testing.T) {
 		now := time.Date(2001, 1, 1, 0, 0, 0, 0, time.FixedZone("", 8*60*60))
 		pNow := &now
 		clock := xtime.CustomClock(pNow)
-		rl, _ := New(WithFilenamePattern("logger.%Y%m%d.log"), WithRotationSize(15), WithRotationTime(time.Hour*24), WithRotationMaxAge(3*24*time.Hour), WithClock(clock))
+		rl, _ := New("logger.%Y%m%d.log", WithRotationSize(15), WithRotationTime(time.Hour*24), WithRotationMaxAge(3*24*time.Hour), WithClock(clock))
 
 		*pNow = xtime.SetDay(now, 1)              // 1d
 		_, _ = fmt.Fprintf(rl, "hello world 1\n") // <- logger.01.log
@@ -366,7 +369,7 @@ func TestRotate(t *testing.T) {
 		now := time.Date(2001, 1, 1, 1, 1, 1, 0, time.FixedZone("", 8*60*60))
 		pNow := &now
 		clock := xtime.CustomClock(pNow)
-		rl, _ := New(WithFilenamePattern("logger.%Y%m%d.log"), WithRotationSize(15), WithRotationTime(time.Hour*24), WithRotationMaxCount(3), WithClock(clock))
+		rl, _ := New("logger.%Y%m%d.log", WithRotationSize(15), WithRotationTime(time.Hour*24), WithRotationMaxCount(3), WithClock(clock))
 
 		*pNow = xtime.SetDay(now, 1)              // 1d
 		_, _ = fmt.Fprintf(rl, "hello world 1\n") // <- logger.01.log
@@ -436,12 +439,12 @@ func TestRotate(t *testing.T) {
 	})
 }
 
-func TestDiffDir(t *testing.T) {
+func TestInDifferentDir(t *testing.T) {
 	t.Run("some write demos", func(t *testing.T) {
 		removeLoggers()
 		defer removeLoggers()
 
-		rl, _ := New(WithFilenamePattern("./_test/_test/logger.log"), WithRotationSize(15))
+		rl, _ := New("./_test/_test/logger.log", WithRotationSize(15))
 		_, _ = fmt.Fprintf(rl, "hello world 1\n") // <- create logger.log
 		_, _ = fmt.Fprintf(rl, "hello world 2\n") // <- use logger.log
 		_, _ = fmt.Fprintf(rl, "hello world 3\n") // <- create: logger.log_1
@@ -453,7 +456,7 @@ func TestDiffDir(t *testing.T) {
 		xtesting.Equal(t, rl.CurrentFilename(), "./_test/_test/logger.log_1")
 		xtesting.Nil(t, rl.Close())
 
-		rl, _ = New(WithFilenamePattern("./_test/_test/logger.log"), WithRotationSize(29))
+		rl, _ = New("./_test/_test/logger.log", WithRotationSize(29))
 		_, _ = fmt.Fprintf(rl, "hello world 4\n") // <- use logger.log
 		_, _ = fmt.Fprintf(rl, "hello world 5\n") // <- create: logger.log_2
 		testFileExistence(t, "./_test/_test/logger.log", true)
@@ -474,7 +477,7 @@ func TestDiffDir(t *testing.T) {
 		now := time.Date(2001, 1, 1, 0, 0, 0, 0, time.FixedZone("", 8*60*60))
 		pNow := &now
 		clock := xtime.CustomClock(pNow)
-		rl, _ := New(WithFilenamePattern("./_test/_test/logger.%Y%m%d.log"), WithRotationSize(15), WithRotationTime(time.Hour*24), WithRotationMaxAge(2*24*time.Hour), WithClock(clock))
+		rl, _ := New("./_test/_test/logger.%Y%m%d.log", WithRotationSize(15), WithRotationTime(time.Hour*24), WithRotationMaxAge(2*24*time.Hour), WithClock(clock))
 
 		*pNow = xtime.SetDay(now, 1)              // 1d
 		_, _ = fmt.Fprintf(rl, "hello world 1\n") // <- logger.01.log
@@ -510,7 +513,7 @@ func TestDiffDir(t *testing.T) {
 		now := time.Date(2001, 1, 1, 1, 1, 1, 0, time.FixedZone("", 8*60*60))
 		pNow := &now
 		clock := xtime.CustomClock(pNow)
-		rl, _ := New(WithFilenamePattern("./_test/_test/logger.%Y%m%d.log"), WithRotationSize(15), WithRotationTime(time.Hour*24), WithRotationMaxCount(2), WithClock(clock))
+		rl, _ := New("./_test/_test/logger.%Y%m%d.log", WithRotationSize(15), WithRotationTime(time.Hour*24), WithRotationMaxCount(2), WithClock(clock))
 
 		*pNow = xtime.SetDay(now, 1)              // 1d
 		_, _ = fmt.Fprintf(rl, "hello world 1\n") // <- logger.01.log
@@ -542,7 +545,7 @@ func TestDiffDir(t *testing.T) {
 		pNow := &now
 		clock := xtime.CustomClock(pNow)
 
-		rl, _ := New(WithFilenamePattern("./_test/logger.%Y%m%d.log"), WithRotationTime(time.Hour*24), WithClock(clock))
+		rl, _ := New("./_test/logger.%Y%m%d.log", WithRotationTime(time.Hour*24), WithClock(clock))
 		*pNow = xtime.SetDay(now, 1)
 		_t_testHookMkdir = func() {
 			f, err := os.OpenFile("_test", os.O_CREATE, 0644)
@@ -571,7 +574,7 @@ func TestSymlink(t *testing.T) {
 		now := time.Date(2001, 1, 1, 0, 0, 0, 0, time.FixedZone("", 8*60*60))
 		pNow := &now
 		clock := xtime.CustomClock(pNow)
-		rl, _ := New(WithFilenamePattern("logger.%Y%m%d.log"), WithSymlinkFilename("logger.current.log"), WithRotationSize(15), WithRotationMaxCount(2), WithClock(clock))
+		rl, _ := New("logger.%Y%m%d.log", WithSymlinkFilename("logger.current.log"), WithRotationSize(15), WithRotationMaxCount(2), WithClock(clock))
 		_, err := fmt.Fprintf(rl, "hello world 1\n") // <- create: logger.01.log
 		xtesting.Nil(t, err)
 		_, err = fmt.Fprintf(rl, "hello world 2\n") // <- use: logger.01.log
@@ -602,7 +605,7 @@ func TestSymlink(t *testing.T) {
 		_ = rl.Close()
 		removeLoggers()
 
-		rl, _ = New(WithFilenamePattern("logger.%Y%m%d.log"), WithSymlinkFilename("logger.current.log"), WithRotationSize(15), WithRotationMaxAge(time.Hour*24*2), WithClock(clock), WithForceNewFile(true))
+		rl, _ = New("logger.%Y%m%d.log", WithSymlinkFilename("logger.current.log"), WithRotationSize(15), WithRotationMaxAge(time.Hour*24*2), WithClock(clock), WithForceNewFile(true))
 		*pNow = xtime.SetDay(now, 1)                // 1d
 		_, err = fmt.Fprintf(rl, "hello world 1\n") // <- create: logger.01.log
 		xtesting.Nil(t, err)
@@ -644,7 +647,7 @@ func TestSymlink(t *testing.T) {
 		now := time.Date(2001, 1, 1, 0, 0, 0, 0, time.FixedZone("", 8*60*60))
 		pNow := &now
 		clock := xtime.CustomClock(pNow)
-		rl, _ := New(WithFilenamePattern("_test/logger.%Y%m%d.log"), WithSymlinkFilename("_test/_test/logger.current.log"), WithRotationSize(15), WithClock(clock))
+		rl, _ := New("_test/logger.%Y%m%d.log", WithSymlinkFilename("_test/_test/logger.current.log"), WithRotationSize(15), WithClock(clock))
 		_, err := fmt.Fprintf(rl, "hello world 1\n") // <- create: logger.01.log
 		xtesting.Nil(t, err)
 		_, err = fmt.Fprintf(rl, "hello world 2\n") // <- use: logger.01.log
@@ -655,7 +658,7 @@ func TestSymlink(t *testing.T) {
 		_ = rl.Close()
 		removeLoggers()
 
-		rl, _ = New(WithFilenamePattern("_test/_test/logger.%Y%m%d.log"), WithSymlinkFilename("_test/logger.current.log"), WithRotationSize(15), WithClock(clock))
+		rl, _ = New("_test/_test/logger.%Y%m%d.log", WithSymlinkFilename("_test/logger.current.log"), WithRotationSize(15), WithClock(clock))
 		_, err = fmt.Fprintf(rl, "hello world 1\n") // <- create: logger.01.log
 		xtesting.Nil(t, err)
 		_, err = fmt.Fprintf(rl, "hello world 2\n") // <- use: logger.01.log
@@ -666,7 +669,7 @@ func TestSymlink(t *testing.T) {
 		_ = rl.Close()
 		removeLoggers()
 
-		rl, _ = New(WithFilenamePattern("_test/logger.%Y%m%d.log"), WithSymlinkFilename("_test/logger.current.log"), WithRotationSize(15), WithClock(clock))
+		rl, _ = New("_test/logger.%Y%m%d.log", WithSymlinkFilename("_test/logger.current.log"), WithRotationSize(15), WithClock(clock))
 		_, err = fmt.Fprintf(rl, "hello world 1\n") // <- create: logger.01.log
 		xtesting.Nil(t, err)
 		_, err = fmt.Fprintf(rl, "hello world 2\n") // <- use: logger.01.log
@@ -685,7 +688,7 @@ func TestSymlink(t *testing.T) {
 		now := time.Date(2001, 1, 1, 0, 0, 0, 0, time.FixedZone("", 8*60*60))
 		pNow := &now
 		clock := xtime.CustomClock(pNow)
-		rl, _ := New(WithFilenamePattern("logger.%Y%m%d.log"), WithSymlinkFilename("_test/logger.current.log"), WithRotationSize(15), WithClock(clock))
+		rl, _ := New("logger.%Y%m%d.log", WithSymlinkFilename("_test/logger.current.log"), WithRotationSize(15), WithClock(clock))
 		*pNow = xtime.SetDay(now, 1)
 		_t_testHookSymlink[0] = func() string {
 			f, err := os.OpenFile("_test", os.O_CREATE, 0644)

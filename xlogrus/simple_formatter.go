@@ -15,7 +15,7 @@ import (
 // simpleFormatterOptions is a type of SimpleFormatter's option, each field can be set by SimpleFormatterOption function type.
 type simpleFormatterOptions struct {
 	timestampFormat  string
-	useUTCTime       bool
+	timeLocation     *time.Location
 	disableColor     bool
 	callerFormatter  func(*runtime.Frame) (filename string, funcname string)
 	levelFormatter   func(logrus.Level) string
@@ -32,17 +32,17 @@ func WithTimestampFormat(f string) SimpleFormatterOption {
 	}
 }
 
-// WithUseUTCTime creates an SimpleFormatterOption to specific use the time.UTC layout or not, defaults to false, and means defaults to use time.Local layout.
-func WithUseUTCTime(use bool) SimpleFormatterOption {
+// WithTimeLocation creates an SimpleFormatterOption to specific the time.Location for entry's time, defaults to time.Local.
+func WithTimeLocation(loc *time.Location) SimpleFormatterOption {
 	return func(o *simpleFormatterOptions) {
-		o.useUTCTime = use
+		o.timeLocation = loc
 	}
 }
 
 // WithDisableColor creates an SimpleFormatterOption to disable the colored format, defaults to false, and means defaults to enable colored format.
 func WithDisableColor(disable bool) SimpleFormatterOption {
-	return func(c *simpleFormatterOptions) {
-		c.disableColor = disable
+	return func(o *simpleFormatterOptions) {
+		o.disableColor = disable
 	}
 }
 
@@ -88,7 +88,7 @@ var _ logrus.Formatter = (*SimpleFormatter)(nil)
 // 	l.SetReportCaller(true)
 // 	l.SetFormatter(NewSimpleFormatter(
 // 		WithTimestampFormat("2006-01-02 15:04:05"),
-// 		WithUseUTCTime(true),
+// 		WithTimeLocation(time.UTC),
 // 		WithDisableColor(false),
 // 		WithCallerFormatter(func(*runtime.Frame) (string, string) { return "", "" }),
 // 		WithLevelFormatter(func(l logrus.Level) string { return strings.ToUpper(l.String())[:1] }),
@@ -103,86 +103,78 @@ func NewSimpleFormatter(options ...SimpleFormatterOption) *SimpleFormatter {
 	if opt.timestampFormat == "" {
 		opt.timestampFormat = time.RFC3339
 	}
-	return &SimpleFormatter{option: opt}
-}
-
-// initOnce initializes the terminal io.Writer for color supported, this method will be called only once.
-func (s *SimpleFormatter) initOnce(entry *logrus.Entry) {
-	s.terminalOnce.Do(func() {
-		if entry.Logger != nil && !s.option.disableColor {
-			xcolor.InitTerminal(entry.Logger.Out)
+	if opt.timeLocation == nil {
+		opt.timeLocation = time.Local
+	}
+	if opt.callerFormatter == nil {
+		opt.callerFormatter = func(frame *runtime.Frame) (filename string, funcname string) {
+			_, filename = filepath.Split(frame.File)
+			_, funcname = filepath.Split(frame.Function)
+			filename = fmt.Sprintf("%s:%d", filename, frame.Line)
+			funcname = fmt.Sprintf("%s()", funcname)
+			return filename, funcname
 		}
-	})
+	}
+	if opt.levelFormatter == nil {
+		opt.levelFormatter = func(level logrus.Level) string {
+			return strings.ToUpper(level.String()[0:4])
+		}
+	}
+	if opt.messageFormatter == nil {
+		opt.messageFormatter = func(level, time, caller, message string) string {
+			if caller == "" {
+				return fmt.Sprintf("%s [%s] %s\n", level, time, message)
+			}
+			return fmt.Sprintf("%s [%s] %s > %s\n", level, time, caller, message)
+		}
+	}
+	return &SimpleFormatter{option: opt}
 }
 
 // Format formats a single logrus.Entry, this method implements logrus.Formatter interface.
 func (s *SimpleFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	s.initOnce(entry)
+	s.terminalOnce.Do(func() {
+		// 0. initialize the terminal io.Writer for color supported
+		if entry.Logger != nil && !s.option.disableColor {
+			xcolor.InitTerminal(entry.Logger.Out)
+		}
+	})
 
-	// 1. time and message
-	t := entry.Time
-	if s.option.useUTCTime {
-		t = t.UTC()
-	} else {
-		t = t.Local()
-	}
-	now := t.Format(s.option.timestampFormat)
-	message := strings.TrimSuffix(entry.Message, "\n")
+	// 1. level and time
+	level := s.option.levelFormatter(entry.Level)
+	now := entry.Time.In(s.option.timeLocation).Format(s.option.timestampFormat)
 
 	// 2. runtime caller
 	caller := ""
 	if entry.HasCaller() {
-		var filename, funcName string
-		if f := s.option.callerFormatter; f != nil {
-			filename, funcName = f(entry.Caller)
-		} else {
-			_, filename = filepath.Split(entry.Caller.File)
-			filename = fmt.Sprintf("%s:%d", filename, entry.Caller.Line)
-			_, funcName = filepath.Split(entry.Caller.Function)
-			funcName = fmt.Sprintf("%s()", funcName)
-		}
+		filename, funcname := s.option.callerFormatter(entry.Caller)
 		parts := make([]string, 0, 2)
 		if filename != "" {
 			parts = append(parts, filename)
 		}
-		if funcName != "" {
-			parts = append(parts, funcName)
+		if funcname != "" {
+			parts = append(parts, funcname)
 		}
 		caller = strings.Join(parts, " ") // "filename:line funcname()"
 	}
 
-	// 3. format
-	level := ""
-	if f := s.option.levelFormatter; f != nil {
-		level = f(entry.Level)
-	}
-	if level == "" {
-		level = strings.ToUpper(entry.Level.String()[0:4])
-	}
+	// 3. color and message
 	if !s.option.disableColor {
 		level = s.levelColor(entry.Level).Sprintf(level)
 		if caller != "" {
-			caller = xcolor.Faint.Sprint(caller)
+			caller = s.callerStyle().Sprint(caller)
 		}
 	}
-	formatted := ""
-	if f := s.option.messageFormatter; f != nil {
-		formatted = f(level, now, caller, message)
-	}
-	if formatted == "" {
-		if caller == "" {
-			formatted = fmt.Sprintf("%s [%s] %s\n", level, now, message)
-		} else {
-			formatted = fmt.Sprintf("%s [%s] %s > %s\n", level, now, caller, message)
-		}
-	}
+	message := strings.TrimSuffix(entry.Message, "\n")
+	message = s.option.messageFormatter(level, now, caller, message)
 
 	// *. write to buffer
-	buf := &bytes.Buffer{}
-	if entry.Buffer != nil {
-		buf = entry.Buffer
+	buf := entry.Buffer
+	if entry.Buffer == nil {
+		// nil only when fire hooks
+		buf = &bytes.Buffer{}
 	}
-	_, _ = buf.WriteString(formatted)
+	_, _ = buf.WriteString(message)
 	return buf.Bytes(), nil
 }
 
@@ -200,25 +192,31 @@ func (s *SimpleFormatter) levelColor(level logrus.Level) xcolor.Color {
 	}
 }
 
-// RFC3339JsonFormatter returns a logrus.JSONFormatter with time.RFC3339Nano timestamp format and custom logrus.FieldMap.
+// callerStyle returns the xcolor.Style for caller.
+func (s *SimpleFormatter) callerStyle() xcolor.Style {
+	return xcolor.Faint // you may not see this style in Windows's cmd
+}
+
+// RFC3339JsonFormatter returns a logrus.JSONFormatter with time.RFC3339Nano timestamp format, "entries" data key and custom logrus.FieldMap.
 func RFC3339JsonFormatter() *logrus.JSONFormatter {
 	return &logrus.JSONFormatter{
 		TimestampFormat:   time.RFC3339Nano,
 		DisableTimestamp:  false,
 		DisableHTMLEscape: false,
-		DataKey:           "entries",
 		PrettyPrint:       false,
+		DataKey:           "entries",
 		FieldMap: logrus.FieldMap{
 			logrus.FieldKeyTime:  "@@time",
 			logrus.FieldKeyLevel: "@level",
 			logrus.FieldKeyMsg:   "@message",
-			logrus.FieldKeyFunc:  "function",
 			logrus.FieldKeyFile:  "file",
+			logrus.FieldKeyFunc:  "function",
+			// @@time -> @level -> @message -> entries -> file -> function
 		},
 	}
 }
 
-// RFC3339ColoredTextFormatter returns a logrus.TextFormatter with time.RFC3339 timestamp format and force color and quote.
+// RFC3339ColoredTextFormatter returns a logrus.TextFormatter with time.RFC3339 timestamp format, full timestamp format, force color and quote.
 func RFC3339ColoredTextFormatter() *logrus.TextFormatter {
 	return &logrus.TextFormatter{
 		ForceColors:      true,
@@ -231,7 +229,7 @@ func RFC3339ColoredTextFormatter() *logrus.TextFormatter {
 			_, funcname := filepath.Split(frame.Function)
 			_, filename := filepath.Split(frame.File)
 			funcname = fmt.Sprintf("%s()", funcname)
-			filename = fmt.Sprintf(" %s:%d", filename, frame.Line)
+			filename = fmt.Sprintf("%s:%d", filename, frame.Line)
 			return funcname, filename
 		},
 	}
