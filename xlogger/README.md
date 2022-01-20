@@ -12,7 +12,7 @@
 
 ### Variables
 
-+ `var Std *logger.Logger`
++ None
 
 ### Constants
 
@@ -20,7 +20,7 @@
 
 ### Functions
 
-+ None
++ `func Std() *log.Logger`
 
 ### Methods
 

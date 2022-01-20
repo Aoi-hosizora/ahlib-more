@@ -27,7 +27,7 @@ type loggerOptions struct {
 	rotationMaxCount int32
 }
 
-// Option represents an option type for RotationLogger's options, can be created by WithXXX functions.
+// Option represents an option type for RotationLogger's option, can be created by WithXXX functions.
 type Option func(*loggerOptions)
 
 // WithFilenamePattern creates an Option to specific filename pattern for RotationLogger, it is a required option.
@@ -347,18 +347,14 @@ func createSymlink(filename, linkname string) error {
 	}
 
 	// check the relative path of destination
-	destination := filename
-	if filepath.Dir(destination) != filepath.Dir(linkname) {
-		destinationPath, _ := filepath.Abs(destination)
-		linkDirnamePath, _ := filepath.Abs(linkDirname)
-		var err error
-		if _t_testHookSymlink[1] != nil {
-			linkDirnamePath = _t_testHookSymlink[1]()
-		}
-		destination, err = filepath.Rel(linkDirnamePath, destinationPath)
-		if err != nil {
-			return fmt.Errorf("failed to evaluate the relative path from `%s` to `%s`: %w", destinationPath, linkDirnamePath, err)
-		}
+	destinationPath, _ := filepath.Abs(filename)
+	linkDirnamePath, _ := filepath.Abs(linkDirname)
+	if _t_testHookSymlink[1] != nil {
+		linkDirnamePath = _t_testHookSymlink[1]()
+	}
+	destination, err := filepath.Rel(linkDirnamePath, destinationPath)
+	if err != nil {
+		return fmt.Errorf("failed to evaluate the relative path from `%s` to `%s`: %w", destinationPath, linkDirnamePath, err)
 	}
 
 	// make symlink and rename to the link file
@@ -369,7 +365,7 @@ func createSymlink(filename, linkname string) error {
 	if _t_testHookSymlink[2] != nil {
 		_t_testHookSymlink[2]()
 	}
-	err := os.Symlink(destination, tempLinkname)
+	err = os.Symlink(destination, tempLinkname)
 	if err != nil {
 		return fmt.Errorf("failed to create new symlink `%s`: %w", tempLinkname, err)
 	}

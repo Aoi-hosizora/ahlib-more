@@ -19,7 +19,7 @@ func TestDiff(t *testing.T) {
 	text, _ := difflib.GetUnifiedDiffString(ud)
 	// fmt.Println(text)
 	// fmt.Print("=============================================\n\n")
-	text = GetColoredUnifiedDiffString(&ud)
+	text = UnifiedDiffString(&ud)
 	fmt.Println(text)
 	fmt.Print("=============================================\n\n")
 
@@ -27,7 +27,7 @@ func TestDiff(t *testing.T) {
 	text, _ = difflib.GetContextDiffString(cd)
 	// fmt.Println(text)
 	// fmt.Print("=============================================\n\n")
-	text = GetColoredContextDiffString(&cd)
+	text = ContextDiffString(&cd)
 	fmt.Println(text)
 	fmt.Print("=============================================\n\n")
 }

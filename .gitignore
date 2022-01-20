@@ -4,8 +4,12 @@
 .history/
 .idea/
 
+### Build ###
+build/
+coverage.txt
+profile.out
+
 ### Project ###
 logs/
-build/
 *.log*
-_ref
+_ref/

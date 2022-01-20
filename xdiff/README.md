@@ -21,8 +21,8 @@
 
 ### Functions
 
-+ `func GetColoredUnifiedDiffString(ud *difflib.UnifiedDiff) string`
-+ `func GetColoredContextDiffString(cd *difflib.ContextDiff) string`
++ `func UnifiedDiffString(ud *difflib.UnifiedDiff) string`
++ `func ContextDiffString(cd *difflib.ContextDiff) string`
 
 ### Methods
 

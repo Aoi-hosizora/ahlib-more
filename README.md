@@ -28,7 +28,7 @@
 ### Dependencies
 
 + See [go.mod](./go.mod) and [go.sum](./go.sum)
-+ `github.com/Aoi-hosizora/ahlib v1.5.0`
++ `github.com/Aoi-hosizora/ahlib v1.6.0`
 + `github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca`
 + `golang.org/x/text v0.3.0`
 + `golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de`

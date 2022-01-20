@@ -5,10 +5,15 @@ import (
 	_ "unsafe"
 )
 
-//go:linkname Std log.std
+//go:linkname std log.std
 
-// Std represents the standard logger creates by log.New, that equals to `log.New(os.Stderr, "", log.LstdFlags)`.
-var Std *log.Logger
+// std represents the standard internal logger creates by log.New, that is `log.New(os.Stderr, "", LstdFlags)`.
+var std *log.Logger
+
+// Std returns the standard logger creates by log.New, and it equals to log.Default.
+func Std() *log.Logger {
+	return std
+}
 
 var _ StdLogger = (*log.Logger)(nil)
 

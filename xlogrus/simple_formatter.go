@@ -14,25 +14,40 @@ import (
 
 // simpleFormatterOptions is a type of SimpleFormatter's option, each field can be set by SimpleFormatterOption function type.
 type simpleFormatterOptions struct {
-	timestampFormat string
-	callerFormatter func(*runtime.Frame) (function string, file string)
-	levelFormatter  func(logrus.Level) string
-	disableColor    bool
-	useUTCTime      bool
+	timestampFormat  string
+	useUTCTime       bool
+	disableColor     bool
+	callerFormatter  func(*runtime.Frame) (filename string, funcname string)
+	levelFormatter   func(logrus.Level) string
+	messageFormatter func(level, time, caller, message string) string
 }
 
 // SimpleFormatterOption represents an option type for SimpleFormatter's option, can be created by WithXXX functions.
 type SimpleFormatterOption func(*simpleFormatterOptions)
 
 // WithTimestampFormat creates an SimpleFormatterOption to specific timestamp format, defaults to time.RFC3339.
-func WithTimestampFormat(format string) SimpleFormatterOption {
+func WithTimestampFormat(f string) SimpleFormatterOption {
 	return func(o *simpleFormatterOptions) {
-		o.timestampFormat = format
+		o.timestampFormat = f
 	}
 }
 
-// WithCallerFormatter creates an SimpleFormatterOption to specific the caller's runtime.Frame formatter, defaults to use the function shortname and filename without path.
-func WithCallerFormatter(formatter func(*runtime.Frame) (function string, file string)) SimpleFormatterOption {
+// WithUseUTCTime creates an SimpleFormatterOption to specific use the time.UTC layout or not, defaults to false, and means defaults to use time.Local layout.
+func WithUseUTCTime(use bool) SimpleFormatterOption {
+	return func(o *simpleFormatterOptions) {
+		o.useUTCTime = use
+	}
+}
+
+// WithDisableColor creates an SimpleFormatterOption to disable the colored format, defaults to false, and means defaults to enable colored format.
+func WithDisableColor(disable bool) SimpleFormatterOption {
+	return func(c *simpleFormatterOptions) {
+		c.disableColor = disable
+	}
+}
+
+// WithCallerFormatter creates an SimpleFormatterOption to specific the caller's runtime.Frame formatter, defaults to use filename without path and function's shortname.
+func WithCallerFormatter(formatter func(*runtime.Frame) (filename string, funcname string)) SimpleFormatterOption {
 	return func(o *simpleFormatterOptions) {
 		o.callerFormatter = formatter
 	}
@@ -45,17 +60,14 @@ func WithLevelFormatter(formatter func(logrus.Level) string) SimpleFormatterOpti
 	}
 }
 
-// WithDisableColor creates an SimpleFormatterOption to disable the colored format, defaults to false, and means defaults to enable colored format.
-func WithDisableColor(disable bool) SimpleFormatterOption {
-	return func(c *simpleFormatterOptions) {
-		c.disableColor = disable
-	}
-}
-
-// WithUseUTCTime creates an SimpleFormatterOption to specific use the time.UTC layout or not, defaults to false, and means defaults to use time.Local layout.
-func WithUseUTCTime(use bool) SimpleFormatterOption {
+// WithMessageFormatter creates an SimpleFormatterOption to specific the logger formatter.
+//
+// The default format logs like:
+// 	WARN [2021-08-29T05:56:25+08:00] test
+// 	INFO [2021-08-29T05:56:25+08:00] filename.go:123 funcname() > test
+func WithMessageFormatter(formatter func(level, time, caller, message string) string) SimpleFormatterOption {
 	return func(o *simpleFormatterOptions) {
-		o.useUTCTime = use
+		o.messageFormatter = formatter
 	}
 }
 
@@ -76,10 +88,10 @@ var _ logrus.Formatter = (*SimpleFormatter)(nil)
 // 	l.SetReportCaller(true)
 // 	l.SetFormatter(NewSimpleFormatter(
 // 		WithTimestampFormat("2006-01-02 15:04:05"),
-// 		WithCallerFormatter(func(*runtime.Frame) (string, string) { return "", "" }), // can use to disable report caller
+// 		WithUseUTCTime(true),
+// 		WithDisableColor(false),
+// 		WithCallerFormatter(func(*runtime.Frame) (string, string) { return "", "" }),
 // 		WithLevelFormatter(func(l logrus.Level) string { return strings.ToUpper(l.String())[:1] }),
-// 		WithDisableColor(false), // defaults to false
-// 		WithUseUTCTime(true), // defaults to false
 // 	))
 func NewSimpleFormatter(options ...SimpleFormatterOption) *SimpleFormatter {
 	opt := &simpleFormatterOptions{}
@@ -104,21 +116,10 @@ func (s *SimpleFormatter) initOnce(entry *logrus.Entry) {
 }
 
 // Format formats a single logrus.Entry, this method implements logrus.Formatter interface.
-//
-// Logs like:
-// 	WARN [2021-08-29T05:56:25+08:00] test
-// 	INFO [2021-08-29T05:56:25+08:00] a.go:1 fn() > test
 func (s *SimpleFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	s.initOnce(entry)
 
 	// 1. time and message
-	level := ""
-	if f := s.option.levelFormatter; f != nil {
-		level = f(entry.Level)
-	}
-	if level == "" {
-		level = strings.ToUpper(entry.Level.String()[0:4])
-	}
 	t := entry.Time
 	if s.option.useUTCTime {
 		t = t.UTC()
@@ -131,25 +132,48 @@ func (s *SimpleFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	// 2. runtime caller
 	caller := ""
 	if entry.HasCaller() {
-		var funcName, filename string
+		var filename, funcName string
 		if f := s.option.callerFormatter; f != nil {
-			funcName, filename = f(entry.Caller)
+			filename, funcName = f(entry.Caller)
 		} else {
-			_, funcName = filepath.Split(entry.Caller.Function)
 			_, filename = filepath.Split(entry.Caller.File)
-			funcName = fmt.Sprintf("%s()", funcName)
 			filename = fmt.Sprintf("%s:%d", filename, entry.Caller.Line)
+			_, funcName = filepath.Split(entry.Caller.Function)
+			funcName = fmt.Sprintf("%s()", funcName)
 		}
-		parts := make([]string, 0, 3)
+		parts := make([]string, 0, 2)
 		if filename != "" {
 			parts = append(parts, filename)
 		}
 		if funcName != "" {
 			parts = append(parts, funcName)
 		}
-		if len(parts) > 0 {
-			parts = append(parts, ">")
-			caller = " " + strings.Join(parts, " ")
+		caller = strings.Join(parts, " ") // "filename:line funcname()"
+	}
+
+	// 3. format
+	level := ""
+	if f := s.option.levelFormatter; f != nil {
+		level = f(entry.Level)
+	}
+	if level == "" {
+		level = strings.ToUpper(entry.Level.String()[0:4])
+	}
+	if !s.option.disableColor {
+		level = s.levelColor(entry.Level).Sprintf(level)
+		if caller != "" {
+			caller = xcolor.Faint.Sprint(caller)
+		}
+	}
+	formatted := ""
+	if f := s.option.messageFormatter; f != nil {
+		formatted = f(level, now, caller, message)
+	}
+	if formatted == "" {
+		if caller == "" {
+			formatted = fmt.Sprintf("%s [%s] %s\n", level, now, message)
+		} else {
+			formatted = fmt.Sprintf("%s [%s] %s > %s\n", level, now, caller, message)
 		}
 	}
 
@@ -158,11 +182,7 @@ func (s *SimpleFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	if entry.Buffer != nil {
 		buf = entry.Buffer
 	}
-	levelString := level
-	if !s.option.disableColor {
-		levelString = s.levelColor(entry.Level).Sprintf(level)
-	}
-	_, _ = fmt.Fprintf(buf, "%s [%s]%s %s\n", levelString, now, caller, message) // ignore error
+	_, _ = buf.WriteString(formatted)
 	return buf.Bytes(), nil
 }
 
@@ -177,5 +197,42 @@ func (s *SimpleFormatter) levelColor(level logrus.Level) xcolor.Color {
 		return xcolor.Red
 	default: // debug, trace
 		return xcolor.White
+	}
+}
+
+// RFC3339JsonFormatter returns a logrus.JSONFormatter with time.RFC3339Nano timestamp format and custom logrus.FieldMap.
+func RFC3339JsonFormatter() *logrus.JSONFormatter {
+	return &logrus.JSONFormatter{
+		TimestampFormat:   time.RFC3339Nano,
+		DisableTimestamp:  false,
+		DisableHTMLEscape: false,
+		DataKey:           "entries",
+		PrettyPrint:       false,
+		FieldMap: logrus.FieldMap{
+			logrus.FieldKeyTime:  "@@time",
+			logrus.FieldKeyLevel: "@level",
+			logrus.FieldKeyMsg:   "@message",
+			logrus.FieldKeyFunc:  "function",
+			logrus.FieldKeyFile:  "file",
+		},
+	}
+}
+
+// RFC3339ColoredTextFormatter returns a logrus.TextFormatter with time.RFC3339 timestamp format and force color and quote.
+func RFC3339ColoredTextFormatter() *logrus.TextFormatter {
+	return &logrus.TextFormatter{
+		ForceColors:      true,
+		ForceQuote:       true,
+		DisableTimestamp: false,
+		FullTimestamp:    true,
+		TimestampFormat:  time.RFC3339,
+		DisableSorting:   false,
+		CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
+			_, funcname := filepath.Split(frame.Function)
+			_, filename := filepath.Split(frame.File)
+			funcname = fmt.Sprintf("%s()", funcname)
+			filename = fmt.Sprintf(" %s:%d", filename, frame.Line)
+			return funcname, filename
+		},
 	}
 }

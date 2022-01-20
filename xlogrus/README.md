@@ -24,16 +24,18 @@
 
 ### Functions
 
-+ `func WithTimestampFormat(format string) SimpleFormatterOption`
-+ `func WithCallerFormatter(formatter func(*runtime.Frame) (function string, file string)) SimpleFormatterOption`
-+ `func WithLevelFormatter(formatter func(logrus.Level) string) SimpleFormatterOption`
-+ `func WithDisableColor(disable bool) SimpleFormatterOption`
++ `func WithTimestampFormat(f string) SimpleFormatterOption`
 + `func WithUseUTCTime(use bool) SimpleFormatterOption`
++ `func WithDisableColor(disable bool) SimpleFormatterOption`
++ `func WithCallerFormatter(formatter func(*runtime.Frame) (filename string, funcname string)) SimpleFormatterOption`
++ `func WithLevelFormatter(formatter func(logrus.Level) string) SimpleFormatterOption`
++ `func WithMessageFormatter(formatter func(level, time, caller, message string) string) SimpleFormatterOption`
 + `func NewSimpleFormatter(options ...SimpleFormatterOption) *SimpleFormatter`
-+ `func WithRotationLogger(rl *xrotation.RotationLogger) RotationHookOption`
-+ `func WithFormatter(formatter logrus.Formatter) RotationHookOption`
-+ `func WithLevel(level logrus.Level) RotationHookOption`
-+ `func NewRotationHook(options ...RotationHookOption) (logrus.Hook, error)`
++ `func RFC3339JsonFormatter() *logrus.JSONFormatter`
++ `func RFC3339ColoredTextFormatter() *logrus.TextFormatter`
++ `func WithRotateFormatter(formatter logrus.Formatter) RotationHookOption`
++ `func WithRotateLevel(level logrus.Level) RotationHookOption`
++ `func NewRotationHook(rotation *xrotation.RotationLogger, options ...RotationHookOption) *RotationHook`
 
 ### Methods
 

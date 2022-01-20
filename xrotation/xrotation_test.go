@@ -665,6 +665,17 @@ func TestSymlink(t *testing.T) {
 		testFileContent(t, "_test/logger.current.log", "hello world 1\nhello world 2\n")
 		_ = rl.Close()
 		removeLoggers()
+
+		rl, _ = New(WithFilenamePattern("_test/logger.%Y%m%d.log"), WithSymlinkFilename("_test/logger.current.log"), WithRotationSize(15), WithClock(clock))
+		_, err = fmt.Fprintf(rl, "hello world 1\n") // <- create: logger.01.log
+		xtesting.Nil(t, err)
+		_, err = fmt.Fprintf(rl, "hello world 2\n") // <- use: logger.01.log
+		xtesting.Nil(t, err)
+		testFileContent(t, "_test/logger.20010101.log", "hello world 1\nhello world 2\n")
+		testFileExistence(t, "_test/logger.current.log", true)
+		testFileContent(t, "_test/logger.current.log", "hello world 1\nhello world 2\n")
+		_ = rl.Close()
+		removeLoggers()
 	})
 
 	t.Run("cover errors", func(t *testing.T) {

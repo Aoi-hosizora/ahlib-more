@@ -6,14 +6,14 @@ import (
 	"strings"
 )
 
-// GetColoredUnifiedDiffString aligns and colorizes the difflib.UnifiedDiff's compare result string returned from difflib.GetUnifiedDiffString.
-func GetColoredUnifiedDiffString(ud *difflib.UnifiedDiff) string {
+// UnifiedDiffString aligns and colorizes the difflib.UnifiedDiff's compare result string returned from difflib.GetUnifiedDiffString.
+func UnifiedDiffString(ud *difflib.UnifiedDiff) string {
 	s, _ := difflib.GetUnifiedDiffString(*ud) // ignore error, actually it will not return error
 	return colorize(s, ud.Eol, true)
 }
 
-// GetColoredContextDiffString aligns and colorizes the difflib.ContextDiff's compare result string returned from difflib.GetContextDiffString.
-func GetColoredContextDiffString(cd *difflib.ContextDiff) string {
+// ContextDiffString aligns and colorizes the difflib.ContextDiff's compare result string returned from difflib.GetContextDiffString.
+func ContextDiffString(cd *difflib.ContextDiff) string {
 	s, _ := difflib.GetContextDiffString(*cd) // ignore error
 	return colorize(s, cd.Eol, false)
 }
