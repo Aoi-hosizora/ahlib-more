@@ -21,7 +21,6 @@
 
 ### Functions
 
-+ `func WithFilenamePattern(p string) Option`
 + `func WithSymlinkFilename(f string) Option`
 + `func WithClock(c xtime.Clock) Option`
 + `func WithForceNewFile(b bool) Option`
@@ -29,7 +28,7 @@
 + `func WithRotationSize(size int64) Option`
 + `func WithRotationMaxAge(age time.Duration) Option`
 + `func WithRotationMaxCount(count int32) Option`
-+ `func New(options ...Option) (*RotationLogger, error)`
++ `func New(pattern string, options ...Option) (*RotationLogger, error)`
 
 ### Methods
 

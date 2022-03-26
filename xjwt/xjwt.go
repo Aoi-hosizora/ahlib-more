@@ -50,7 +50,7 @@ func ParseTokenClaims(signedToken string, secret []byte, claims jwt.Claims) (jwt
 	return tokenObj.Claims, nil
 }
 
-// CheckValidationError returns true if the given error is jwt.ValidationError with given flag.
+// CheckValidationError returns true if given error is jwt.ValidationError with given flag.
 func CheckValidationError(err error, flag uint32) bool {
 	ve, ok := err.(*jwt.ValidationError)
 	return ok && (ve.Errors&flag != 0)

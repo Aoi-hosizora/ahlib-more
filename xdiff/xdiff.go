@@ -18,13 +18,14 @@ func ContextDiffString(cd *difflib.ContextDiff) string {
 	return colorize(s, cd.Eol, false)
 }
 
-// colorize aligns and colorizes the given string, notes that alignment is only for unified diff, that is to add a space between prefix and content.
+// colorize aligns and colorizes given string. Note that alignment is only for unified diff, that is to add a space between prefix and content.
 func colorize(s, eol string, unified bool) string {
 	if len(eol) == 0 {
 		eol = "\n"
 	}
 	lines := strings.Split(s, eol)
-	outLines := make([]string, 0, len(lines))
+	out := make([]string, 0, len(lines))
+
 	for _, line := range lines {
 		minusColor := xcolor.BrightRed
 		plusColor := xcolor.BrightGreen
@@ -34,12 +35,13 @@ func colorize(s, eol string, unified bool) string {
 		// 1. skip
 		if len(line) == 0 || strings.HasPrefix(line, "*** ") || strings.HasPrefix(line, "--- ") || strings.HasPrefix(line, "+++ ") ||
 			strings.HasPrefix(line, "***************") || strings.HasPrefix(line, "@@ -") {
-			outLines = append(outLines, line)
+			out = append(out, line)
 			continue
 		}
 
 		// 2. colorize
-		if strings.HasPrefix(line, "-") {
+		switch {
+		case strings.HasPrefix(line, "-"):
 			if len(line) == 1 {
 				line = "- "
 			} else if !unified {
@@ -48,7 +50,7 @@ func colorize(s, eol string, unified bool) string {
 				line = "- " + line[1:]
 			}
 			line = minusColor.Sprint(line)
-		} else if strings.HasPrefix(line, "+") {
+		case strings.HasPrefix(line, "+"):
 			if len(line) == 1 {
 				line = "+ "
 			} else if !unified {
@@ -57,10 +59,10 @@ func colorize(s, eol string, unified bool) string {
 				line = "+ " + line[1:]
 			}
 			line = plusColor.Sprint(line)
-		} else if strings.HasPrefix(line, "!") {
+		case strings.HasPrefix(line, "!"):
 			line = "!" + line[1:]
 			line = exclamationColor.Sprint(line)
-		} else if strings.HasPrefix(line, " ") {
+		case strings.HasPrefix(line, " "):
 			if len(line) == 1 {
 				line = "  "
 			} else if !unified {
@@ -70,7 +72,8 @@ func colorize(s, eol string, unified bool) string {
 			}
 			line = normalColor.Sprint(line)
 		}
-		outLines = append(outLines, line)
+		out = append(out, line)
 	}
-	return strings.Join(outLines, eol)
+
+	return strings.Join(out, eol)
 }

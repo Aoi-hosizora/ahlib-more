@@ -264,13 +264,13 @@ func Base64DecodeFromString(data string) ([]byte, error) {
 // =========================
 
 const (
-	panicBlockSize = "xcrypto: blockSize must larger then 0"
+	panicZeroBlockSize = "xcrypto: blockSize must larger than 0"
 )
 
 // PKCS5Padding uses PKCS#5 and PKCS#7 to pad data to block aligned bytes.
 func PKCS5Padding(data []byte, blockSize int) []byte {
 	if blockSize <= 0 {
-		panic(panicBlockSize)
+		panic(panicZeroBlockSize)
 	}
 
 	padLen := blockSize - len(data)%blockSize

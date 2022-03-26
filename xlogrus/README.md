@@ -25,7 +25,7 @@
 ### Functions
 
 + `func WithTimestampFormat(f string) SimpleFormatterOption`
-+ `func WithUseUTCTime(use bool) SimpleFormatterOption`
++ `func WithTimeLocation(loc *time.Location) SimpleFormatterOption`
 + `func WithDisableColor(disable bool) SimpleFormatterOption`
 + `func WithCallerFormatter(formatter func(*runtime.Frame) (filename string, funcname string)) SimpleFormatterOption`
 + `func WithLevelFormatter(formatter func(logrus.Level) string) SimpleFormatterOption`

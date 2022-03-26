@@ -7,10 +7,10 @@ import (
 
 //go:linkname std log.std
 
-// std represents the standard internal logger creates by log.New, that is `log.New(os.Stderr, "", LstdFlags)`.
+// std is the unexported standard logger `log.std`, this value can be created by log.Default.
 var std *log.Logger
 
-// Std returns the standard logger creates by log.New, and it equals to log.Default.
+// Std returns the unexported default logger, this value can be created by log.Default.
 func Std() *log.Logger {
 	return std
 }

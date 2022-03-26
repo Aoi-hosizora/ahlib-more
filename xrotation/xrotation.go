@@ -72,7 +72,7 @@ func WithRotationSize(size int64) Option {
 }
 
 // WithRotationMaxAge creates an Option to specific rotation loggers' max age for RotationLogger, defaults to 7 days if maxCount is not set.
-// Notes that maxAge and maxCount cannot be set at the same time.
+// Note that maxAge and maxCount cannot be set at the same time.
 func WithRotationMaxAge(age time.Duration) Option {
 	return func(o *loggerOptions) {
 		if age < 0 {
@@ -83,7 +83,7 @@ func WithRotationMaxAge(age time.Duration) Option {
 }
 
 // WithRotationMaxCount creates an Option to specific rotation loggers' max count for RotationLogger, defaults to no limits, and it cannot less
-// than one. Notes that maxAge and maxCount cannot be set at the same time.
+// than one. Note that maxAge and maxCount cannot be set at the same time.
 func WithRotationMaxCount(count int32) Option {
 	return func(o *loggerOptions) {
 		if count < 0 {
@@ -231,9 +231,9 @@ const (
 	errDoRotation       = "xrotation: failed to rotate: [%w]"
 )
 
-// getRotatedWriter does: check if need to create new file, create a unique-filename file, generate symlink and do rotation.
+// getRotatedWriter does: check whether it needs to create new file, create a unique-filename file, generate symlink and do rotation.
 func (r *RotationLogger) getRotatedWriter(rotateManually bool) (io.Writer, error) {
-	// check if need to create new file
+	// check whether it needs to create new file
 	createNewFile := false
 	generation := r.currGeneration
 	basename, _ := xtime.StrftimeInString(r.namePattern, xtime.TruncateTime(r.option.nowClock.Now(), r.option.rotationTime))
@@ -252,7 +252,7 @@ func (r *RotationLogger) getRotatedWriter(rotateManually bool) (io.Writer, error
 	} else if basename != r.currBasename { // new basename
 		createNewFile = true // 2.
 		generation = 0
-	} else { // check if exceed rotation size
+	} else { // check whether file exceeds rotation size
 		fi, err := os.Stat(r.currFilename)
 		if err == nil && r.option.rotationSize > 0 && fi.Size() >= r.option.rotationSize {
 			createNewFile = true // 2.

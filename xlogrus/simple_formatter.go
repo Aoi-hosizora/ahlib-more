@@ -71,7 +71,7 @@ func WithMessageFormatter(formatter func(level, time, caller, message string) st
 	}
 }
 
-// SimpleFormatter represents a simple formatter for logrus.Logger, it only formats level, time, caller and message information with color or without color, also notes that
+// SimpleFormatter represents a simple formatter for logrus.Logger, it only formats level, time, caller and message information with color or without color. Note that
 // the logrus.Fields data will not be formatted unlink what logrus.TextFormatter does.
 type SimpleFormatter struct {
 	option       *simpleFormatterOptions
