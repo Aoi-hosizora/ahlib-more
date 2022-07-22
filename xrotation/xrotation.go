@@ -30,14 +30,14 @@ type loggerOptions struct {
 // Option represents an option type for RotationLogger's option, can be created by WithXXX functions.
 type Option func(*loggerOptions)
 
-// WithSymlinkFilename creates an Option to specific symlink filename for RotationLogger, defaults to empty, and means not to create symlink.
+// WithSymlinkFilename creates an Option to specify symlink filename for RotationLogger, defaults to empty, and means not to create symlink.
 func WithSymlinkFilename(f string) Option {
 	return func(o *loggerOptions) {
 		o.symlinkFilename = f
 	}
 }
 
-// WithClock creates an Option to specific a xtime.Clock for RotationLogger, defaults to xtime.Local.
+// WithClock creates an Option to specify a xtime.Clock for RotationLogger, defaults to xtime.Local.
 func WithClock(c xtime.Clock) Option {
 	return func(o *loggerOptions) {
 		o.nowClock = c
@@ -51,7 +51,7 @@ func WithForceNewFile(b bool) Option {
 	}
 }
 
-// WithRotationTime creates an Option to specific a rotation time for RotationLogger, defaults to 24 hours.
+// WithRotationTime creates an Option to specify a rotation time for RotationLogger, defaults to 24 hours.
 func WithRotationTime(t time.Duration) Option {
 	return func(o *loggerOptions) {
 		if t < 0 {
@@ -61,7 +61,7 @@ func WithRotationTime(t time.Duration) Option {
 	}
 }
 
-// WithRotationSize creates an Option to specific a rotation size for RotationLogger, defaults to no limit.
+// WithRotationSize creates an Option to specify a rotation size for RotationLogger, defaults to no limit.
 func WithRotationSize(size int64) Option {
 	return func(o *loggerOptions) {
 		if size < 0 {
@@ -71,7 +71,7 @@ func WithRotationSize(size int64) Option {
 	}
 }
 
-// WithRotationMaxAge creates an Option to specific rotation loggers' max age for RotationLogger, defaults to 7 days if maxCount is not set.
+// WithRotationMaxAge creates an Option to specify rotation loggers' max age for RotationLogger, defaults to 7 days if maxCount is not set.
 // Note that maxAge and maxCount cannot be set at the same time.
 func WithRotationMaxAge(age time.Duration) Option {
 	return func(o *loggerOptions) {
@@ -82,7 +82,7 @@ func WithRotationMaxAge(age time.Duration) Option {
 	}
 }
 
-// WithRotationMaxCount creates an Option to specific rotation loggers' max count for RotationLogger, defaults to no limits, and it cannot less
+// WithRotationMaxCount creates an Option to specify rotation loggers' max count for RotationLogger, defaults to no limits, and it cannot less
 // than one. Note that maxAge and maxCount cannot be set at the same time.
 func WithRotationMaxCount(count int32) Option {
 	return func(o *loggerOptions) {

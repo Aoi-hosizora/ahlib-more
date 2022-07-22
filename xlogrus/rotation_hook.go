@@ -15,14 +15,14 @@ type rotationHookOptions struct {
 // RotationHookOption represents an option type for RotationHook's option, can be created by WithXXX functions.
 type RotationHookOption func(*rotationHookOptions)
 
-// WithRotateFormatter creates an RotationHookOption to specific logrus.Formatter for rotation, defaults to logrus.JSONFormatter with time.RFC3339.
+// WithRotateFormatter creates an RotationHookOption to specify logrus.Formatter for rotation, defaults to logrus.JSONFormatter with time.RFC3339.
 func WithRotateFormatter(formatter logrus.Formatter) RotationHookOption {
 	return func(o *rotationHookOptions) {
 		o.formatter = formatter
 	}
 }
 
-// WithRotateLevel creates an RotationHookOption to specific lowest logrus.Level for rotation, defaults to logrus.WarnLevel.
+// WithRotateLevel creates an RotationHookOption to specify the lowest logrus.Level for rotation, defaults to logrus.WarnLevel.
 func WithRotateLevel(level logrus.Level) RotationHookOption {
 	return func(o *rotationHookOptions) {
 		if level < logrus.PanicLevel || level > logrus.TraceLevel {
@@ -60,7 +60,7 @@ func NewRotationHook(rotation *xrotation.RotationLogger, options ...RotationHook
 	if rotation == nil {
 		panic(panicNilRotationLogger)
 	}
-	opt := &rotationHookOptions{level: logrus.Level(4294967295)}
+	opt := &rotationHookOptions{level: logrus.Level(4294967295)} // -> as default level
 	for _, o := range options {
 		if o != nil {
 			o(opt)

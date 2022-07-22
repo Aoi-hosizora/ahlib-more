@@ -25,14 +25,14 @@ type simpleFormatterOptions struct {
 // SimpleFormatterOption represents an option type for SimpleFormatter's option, can be created by WithXXX functions.
 type SimpleFormatterOption func(*simpleFormatterOptions)
 
-// WithTimestampFormat creates an SimpleFormatterOption to specific timestamp format, defaults to time.RFC3339.
+// WithTimestampFormat creates an SimpleFormatterOption to specify timestamp format, defaults to time.RFC3339.
 func WithTimestampFormat(f string) SimpleFormatterOption {
 	return func(o *simpleFormatterOptions) {
 		o.timestampFormat = f
 	}
 }
 
-// WithTimeLocation creates an SimpleFormatterOption to specific the time.Location for entry's time, defaults to time.Local.
+// WithTimeLocation creates an SimpleFormatterOption to specify the time.Location for entry's time, defaults to time.Local.
 func WithTimeLocation(loc *time.Location) SimpleFormatterOption {
 	return func(o *simpleFormatterOptions) {
 		o.timeLocation = loc
@@ -46,21 +46,21 @@ func WithDisableColor(disable bool) SimpleFormatterOption {
 	}
 }
 
-// WithCallerFormatter creates an SimpleFormatterOption to specific the caller's runtime.Frame formatter, defaults to use filename without path and function's shortname.
+// WithCallerFormatter creates an SimpleFormatterOption to specify the caller's runtime.Frame formatter, defaults to use filename without path and function's shortname.
 func WithCallerFormatter(formatter func(*runtime.Frame) (filename string, funcname string)) SimpleFormatterOption {
 	return func(o *simpleFormatterOptions) {
 		o.callerFormatter = formatter
 	}
 }
 
-// WithLevelFormatter creates an SimpleFormatterOption to specific the logrus.Level formatter, defaults to use the first four character in capital of the level.
+// WithLevelFormatter creates an SimpleFormatterOption to specify the logrus.Level formatter, defaults to use the first four character in capital of the level.
 func WithLevelFormatter(formatter func(logrus.Level) string) SimpleFormatterOption {
 	return func(o *simpleFormatterOptions) {
 		o.levelFormatter = formatter
 	}
 }
 
-// WithMessageFormatter creates an SimpleFormatterOption to specific the logger formatter.
+// WithMessageFormatter creates an SimpleFormatterOption to specify the logger formatter.
 //
 // The default format logs like:
 // 	WARN [2021-08-29T05:56:25+08:00] test
