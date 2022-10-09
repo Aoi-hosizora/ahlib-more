@@ -21,8 +21,11 @@
 
 ### Functions
 
++ `func Cmd() *pflag.FlagSet`
++ `func DefaultUsage(cmd *pflag.FlagSet)`
++ `func PrintUsage()`
 + `func Parse() error`
-+ `func ParseDefault()`
++ `func MustParse()`
 
 ### Methods
 

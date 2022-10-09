@@ -4,6 +4,8 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
+// TODO upgrade jwt to newest version
+
 // GenerateToken generates jwt token using given jwt.Claims, secret and jwt.SigningMethod.
 func GenerateToken(method jwt.SigningMethod, claims jwt.Claims, key interface{}) (string, error) {
 	tokenObj := jwt.NewWithClaims(method, claims)

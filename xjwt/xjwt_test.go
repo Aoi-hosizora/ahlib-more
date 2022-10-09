@@ -47,7 +47,7 @@ func TestGenerateToken(t *testing.T) {
 			xtesting.NotNil(t, err)
 		} else {
 			xtesting.Nil(t, err)
-			xtesting.NotEmpty(t, token)
+			xtesting.NotBlankString(t, token)
 		}
 	}
 }

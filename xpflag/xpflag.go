@@ -1,37 +1,59 @@
 package xpflag
 
 import (
+	"errors"
 	"fmt"
-	"github.com/Aoi-hosizora/ahlib/xreflect"
 	"github.com/spf13/pflag"
 	"io"
 	"os"
-	"reflect"
 )
 
-// Parse parses flag definitions from the argument list, and this function never panic or call os.Exit.
-// Visit pflag.Parse for more details.
-func Parse() error {
-	errorHandling := xreflect.FieldValueOf(pflag.CommandLine, "errorHandling")
-	saved := xreflect.GetUnexportedField(errorHandling)
-	xreflect.SetUnexportedField(errorHandling, reflect.ValueOf(pflag.ContinueOnError))
-	defer xreflect.SetUnexportedField(errorHandling, saved)
-	return pflag.CommandLine.Parse(os.Args[1:])
+// _cmd is a global pflag.FlagSet.
+var _cmd = pflag.NewFlagSet(os.Args[0], pflag.ContinueOnError)
+
+func init() {
+	_cmd.Usage = func() { DefaultUsage(_cmd) }
 }
 
-// osStderr always equals to os.Stderr except when testing.
-var osStderr io.Writer = os.Stderr
+// Cmd returns the global pflag.FlagSet. This should be used if want to use Parse, MustParse or PrintUsage.
+func Cmd() *pflag.FlagSet {
+	return _cmd
+}
 
-// osExit always equals to os.Exit except when testing.
-var osExit = os.Exit
+// DefaultUsage is the default usage function, which prints the default usage string to os.Stderr.
+func DefaultUsage(cmd *pflag.FlagSet) {
+	fmt.Fprintf(_osStderr, "Usage of %s:\n", os.Args[0])
+	fmt.Fprintf(_osStderr, "%s", cmd.FlagUsages())
+}
 
-// ParseDefault parses flag definitions from the argument list, if it failed to parse, this function will
-// print error message and default usage by pflag.Usage to os.Stderr.
-func ParseDefault() {
+// PrintUsage prints the default usage string to os.Stderr.
+func PrintUsage() {
+	if _cmd.Usage != nil {
+		_cmd.Usage()
+	}
+}
+
+// Parse parses flags passed to the program and returns error, note that this function never panic or exit the program.
+func Parse() error {
+	return _cmd.Parse(os.Args[1:]) // may return "pflag.ErrHelp"
+}
+
+// _osStderr always equals to os.Stderr except when testing.
+var _osStderr io.Writer = os.Stderr
+
+// _osExit always equals to os.Exit except when testing.
+var _osExit = os.Exit
+
+// MustParse parses flags passed to the program, prints error message and exits the program when failed to parse.
+func MustParse() {
 	err := Parse()
 	if err != nil {
-		_, _ = fmt.Fprintf(osStderr, "Error, %v\n", err)
-		pflag.Usage()
-		osExit(2)
+		if errors.Is(err, pflag.ErrHelp) {
+			_osExit(0)
+			return
+		}
+		fmt.Fprintf(_osStderr, "Error: %v\n", err)
+		fmt.Fprintf(_osStderr, "Run '%s --help' for usage.\n", os.Args[0])
+		_osExit(2)
 	}
 }

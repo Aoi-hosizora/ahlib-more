@@ -2,6 +2,7 @@
 
 ## Dependencies
 
++ xrotation
 + github.com/Aoi-hosizora/ahlib
 + github.com/sirupsen/logrus
 

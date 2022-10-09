@@ -1,0 +1,11 @@
+$0 -- the most basic packages, which only depend on third-party libraries [·]
+xcharset            (x) [ahlib, github.com/saintfish/chardet, golang.org/x/text]
+xcrypto             (x) [ahlib, golang.org/x/crypto]
+xdiff               (x) [ahlib, github.com/pmezard/go-difflib]
+xjwt                (x) [ahlib, github.com/golang-jwt/jwt]
+xlogger             (x) [x]
+xpflag              (x) [ahlib, github.com/spf13/pflag]
+xrotation           (x) [ahlib] <<<
+
+$1 -- packages that depend on $0 libraries (·) and third-party libraries [·]
+xlogrus             (xrotation) [ahlib, github.com/sirupsen/logrus]

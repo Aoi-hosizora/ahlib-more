@@ -1,8 +1,8 @@
 package xpflag
 
 import (
+	"errors"
 	"fmt"
-	"github.com/Aoi-hosizora/ahlib/xreflect"
 	"github.com/Aoi-hosizora/ahlib/xtesting"
 	"github.com/spf13/pflag"
 	"log"
@@ -11,35 +11,44 @@ import (
 	"testing"
 )
 
-func TestErrorHandling(t *testing.T) {
-	field := xreflect.FieldValueOf(pflag.CommandLine, "errorHandling")
-	errorHandling := xreflect.GetUnexportedField(field).Interface().(pflag.ErrorHandling)
-	xtesting.Equal(t, errorHandling, pflag.ExitOnError)
-	xtesting.Nil(t, Parse())
-	xtesting.Equal(t, errorHandling, pflag.ExitOnError)
-}
-
 func TestParse(t *testing.T) {
-	saved := pflag.CommandLine
-	defer func() { pflag.CommandLine = saved }()
+	saved := _cmd
+	defer func() { _cmd = saved }()
 	saved2 := os.Args
 	defer func() { os.Args = saved2 }()
-	saved3 := osExit
-	defer func() { osExit = saved3 }()
-	saved4 := osStderr
-	defer func() { osStderr = saved4 }()
-	saved5 := pflag.Usage
-	defer func() { pflag.Usage = saved5 }()
+	saved3 := _osStderr
+	defer func() { _osStderr = saved3 }()
+	saved4 := _osExit
+	defer func() { _osExit = saved4 }()
 
 	var pHelp *bool
 	var pConfig *string
-	define := func() {
-		pflag.CommandLine = pflag.NewFlagSet("application", pflag.ContinueOnError)
-		pflag.Usage = func() {}
-		pHelp = pflag.CommandLine.BoolP("help", "h", false, "show help message")
-		pConfig = pflag.CommandLine.StringP("config", "c", "./config.json", "config file path")
+	define := func(includeError bool) {
+		_cmd = pflag.NewFlagSet("application", pflag.ContinueOnError) // avoid to influence global _cmd
+		_cmd.Usage = func() { DefaultUsage(_cmd) }
+		if includeError {
+			pHelp = Cmd().BoolP("help", "h", false, "show help message")
+		}
+		pConfig = Cmd().StringP("config", "c", "./config.json", "config file path")
+	}
+	sb := &strings.Builder{}
+	_osStderr = sb
+	exitCode := -1
+	_osExit = func(code int) {
+		exitCode = code
 	}
 
+	// 1. PrintUsage
+	xtesting.EmptyCollection(t, strings.TrimSpace(Cmd().FlagUsages()))
+	PrintUsage()
+	define(false)
+	xtesting.Equal(t, len(strings.Split(strings.TrimSpace(Cmd().FlagUsages()), "\n")), 1)
+	PrintUsage()
+	define(true)
+	xtesting.Equal(t, len(strings.Split(strings.TrimSpace(Cmd().FlagUsages()), "\n")), 2)
+	PrintUsage()
+
+	// => test normal parse
 	for _, tc := range []struct {
 		giveArgs  []string
 		wantError bool
@@ -69,27 +78,60 @@ func TestParse(t *testing.T) {
 	} {
 		t.Run(strings.Join(tc.giveArgs, " "), func(t *testing.T) {
 			os.Args = append([]string{"application"}, tc.giveArgs...)
-			define()
+			define(true)
+
+			// 2. Parse
 			err := Parse()
 			xtesting.Equal(t, err != nil, tc.wantError)
 			if err == nil && tc.checkFn != nil {
 				tc.checkFn()
 			}
 
-			sb := &strings.Builder{}
-			osStderr = sb
-			exitCode := 0
-			osExit = func(code int) {
-				exitCode = code
-			}
-			ParseDefault()
-			if err == nil {
+			// 3. MustParse
+			sb.Reset()
+			exitCode = -1
+			MustParse()
+			if !tc.wantError {
 				xtesting.Equal(t, sb.String(), "")
-				xtesting.Equal(t, exitCode, 0)
+				xtesting.Equal(t, exitCode, -1) // success
 			} else {
 				log.Println(err)
-				xtesting.Equal(t, sb.String(), fmt.Sprintf("Error, %v\n", err))
+				firstLine := strings.Split(sb.String(), "\n")[0]
+				xtesting.Equal(t, firstLine, fmt.Sprintf("Error: %v", err))
 				xtesting.Equal(t, exitCode, 2)
+			}
+		})
+	}
+
+	// => test parse without help flag
+	for _, tc := range []struct {
+		giveArgs      []string
+		wantHelpError bool
+	}{
+		{[]string{""}, false},
+		{[]string{"-h"}, true},
+		{[]string{"--help"}, true},
+		{[]string{"-c -h"}, false},
+		{[]string{"-h -c"}, true},
+	} {
+		t.Run(strings.Join(tc.giveArgs, " "), func(t *testing.T) {
+			os.Args = append([]string{"application"}, tc.giveArgs...)
+			define(false)
+
+			// 4. Parse (for help)
+			err := Parse()
+			xtesting.Equal(t, errors.Is(err, pflag.ErrHelp), tc.wantHelpError)
+			log.Println(err) // may be "pflag: help requested"
+
+			// 5. MustParse (for help)
+			sb.Reset()
+			exitCode = -1
+			MustParse()
+			if !tc.wantHelpError {
+				xtesting.Equal(t, exitCode, -1) // success
+			} else {
+				xtesting.Equal(t, exitCode, 0)
+				xtesting.Equal(t, strings.Contains(sb.String(), pflag.ErrHelp.Error()), false)
 			}
 		})
 	}
