@@ -7,7 +7,7 @@
 [![Release](https://img.shields.io/github/v/release/Aoi-hosizora/ahlib-more)](https://github.com/Aoi-hosizora/ahlib-more/releases)
 [![Go Reference](https://pkg.go.dev/badge/github.com/Aoi-hosizora/ahlib-more.svg)](https://pkg.go.dev/github.com/Aoi-hosizora/ahlib-more)
 
-+ A personal golang library with some common and small utilities, is the extension library of [Aoi-hosizora/ahlib](https://github.com/Aoi-hosizora/ahlib), requires `Go >= 1.15`.
++ A personal golang library with more common and light utilities, which depends on some light third-party libraries, requires `Go >= 1.15`.
 
 ### Related libraries
 
@@ -26,6 +26,7 @@
 + xlogrus
 + xpflag
 + xrotation
++ xtask
 
 ### Dependencies
 
@@ -34,7 +35,8 @@
 + `github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca`
 + `golang.org/x/text v0.3.0`
 + `golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de`
++ `github.com/pmezard/go-difflib v1.0.0`
 + `github.com/golang-jwt/jwt/v4 v4.1.0`
 + `github.com/sirupsen/logrus v1.8.1`
 + `github.com/spf13/pflag v1.0.5`
-+ `github.com/pmezard/go-difflib v1.0.0`
++ `github.com/robfig/cron/v3 v3.0.1`

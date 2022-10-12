@@ -6,6 +6,7 @@ xjwt                (x) [ahlib, github.com/golang-jwt/jwt]
 xlogger             (x) [x]
 xpflag              (x) [ahlib, github.com/spf13/pflag]
 xrotation           (x) [ahlib] <<<
+xtask               (x) [ahlib, github.com/robfig/cron/v3]
 
 $1 -- packages that depend on $0 libraries (·) and third-party libraries [·]
 xlogrus             (xrotation) [ahlib, github.com/sirupsen/logrus]
