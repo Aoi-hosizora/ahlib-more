@@ -25,8 +25,8 @@
 + `func GenerateTokenWithHS256(claims jwt.Claims, secret []byte) (string, error)`
 + `func GenerateTokenWithHS384(claims jwt.Claims, secret []byte) (string, error)`
 + `func GenerateTokenWithHS512(claims jwt.Claims, secret []byte) (string, error)`
-+ `func ParseToken(signedToken string, secret []byte, claims jwt.Claims) (*jwt.Token, error)`
-+ `func ParseTokenClaims(signedToken string, secret []byte, claims jwt.Claims) (jwt.Claims, error)`
++ `func ParseToken(signedToken string, secret []byte, claims jwt.Claims, options ...jwt.ParserOption) (*jwt.Token, error)`
++ `func ParseTokenClaims(signedToken string, secret []byte, claims jwt.Claims, options ...jwt.ParserOption) (jwt.Claims, error)`
 + `func CheckValidationError(err error, flag uint32) bool`
 + `func IsAudienceError(err error) bool`
 + `func IsExpiredError(err error) bool`

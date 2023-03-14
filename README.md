@@ -13,8 +13,7 @@
 
 + [Aoi-hosizora/ahlib](https://github.com/Aoi-hosizora/ahlib)
 + [Aoi-hosizora/ahlib-more](https://github.com/Aoi-hosizora/ahlib-more)
-+ [Aoi-hosizora/ahlib-web](https://github.com/Aoi-hosizora/ahlib-web)
-+ [Aoi-hosizora/ahlib-db](https://github.com/Aoi-hosizora/ahlib-db)
++ [Aoi-hosizora/ahlib-mx](https://github.com/Aoi-hosizora/ahlib-mx)
 
 ### Packages
 
@@ -36,7 +35,7 @@
 + `golang.org/x/text v0.3.0`
 + `golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de`
 + `github.com/pmezard/go-difflib v1.0.0`
-+ `github.com/golang-jwt/jwt/v4 v4.1.0`
++ `github.com/golang-jwt/jwt/v4 v4.5.0`
 + `github.com/sirupsen/logrus v1.8.1`
 + `github.com/spf13/pflag v1.0.5`
 + `github.com/robfig/cron/v3 v3.0.1`

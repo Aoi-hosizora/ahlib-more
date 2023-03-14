@@ -36,7 +36,7 @@ func DecodeBytes(encoding encoding.Encoding, bs []byte) ([]byte, error) {
 	return result, err
 }
 
-// See https://github.com/saintfish/chardet/blob/master/detector.go and https://www.iana.org/assignments/charset-reg/charset-reg.xhtml.
+// See https://github.com/saintfish/chardet/blob/3af4cd4741/detector.go and https://www.iana.org/assignments/charset-reg/charset-reg.xhtml.
 const (
 	IANA_UTF8    = "UTF-8"    // *
 	IANA_UTF16BE = "UTF-16BE" // *

@@ -4,8 +4,6 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-// TODO upgrade jwt to newest version
-
 // GenerateToken generates jwt token using given jwt.Claims, secret and jwt.SigningMethod.
 func GenerateToken(method jwt.SigningMethod, claims jwt.Claims, key interface{}) (string, error) {
 	tokenObj := jwt.NewWithClaims(method, claims)
@@ -32,11 +30,11 @@ func GenerateTokenWithHS512(claims jwt.Claims, secret []byte) (string, error) {
 }
 
 // ParseToken parses jwt token string to jwt.Token using given jwt.Claims and secret.
-func ParseToken(signedToken string, secret []byte, claims jwt.Claims) (*jwt.Token, error) {
+func ParseToken(signedToken string, secret []byte, claims jwt.Claims, options ...jwt.ParserOption) (*jwt.Token, error) {
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		return secret, nil
 	}
-	tokenObj, err := jwt.ParseWithClaims(signedToken, claims, keyFunc)
+	tokenObj, err := jwt.ParseWithClaims(signedToken, claims, keyFunc, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -44,8 +42,8 @@ func ParseToken(signedToken string, secret []byte, claims jwt.Claims) (*jwt.Toke
 }
 
 // ParseTokenClaims parses jwt token string to jwt.Claims using given jwt.Claims and secret.
-func ParseTokenClaims(signedToken string, secret []byte, claims jwt.Claims) (jwt.Claims, error) {
-	tokenObj, err := ParseToken(signedToken, secret, claims)
+func ParseTokenClaims(signedToken string, secret []byte, claims jwt.Claims, options ...jwt.ParserOption) (jwt.Claims, error) {
+	tokenObj, err := ParseToken(signedToken, secret, claims, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -54,43 +52,44 @@ func ParseTokenClaims(signedToken string, secret []byte, claims jwt.Claims) (jwt
 
 // CheckValidationError returns true if given error is jwt.ValidationError with given flag.
 func CheckValidationError(err error, flag uint32) bool {
+	// Here DO NOT use jwt.ValidationError.Is to check error
 	ve, ok := err.(*jwt.ValidationError)
 	return ok && (ve.Errors&flag != 0)
 }
 
 // IsAudienceError checks error is an AUD (Audience) validation error.
 func IsAudienceError(err error) bool {
-	return CheckValidationError(err, jwt.ValidationErrorAudience)
+	return CheckValidationError(err, jwt.ValidationErrorAudience) // AUD
 }
 
 // IsExpiredError checks error is an EXP (Expires at) validation error.
 func IsExpiredError(err error) bool {
-	return CheckValidationError(err, jwt.ValidationErrorExpired)
+	return CheckValidationError(err, jwt.ValidationErrorExpired) // EXP
 }
 
 // IsIdError checks error is a JTI (Id) validation error.
 func IsIdError(err error) bool {
-	return CheckValidationError(err, jwt.ValidationErrorId)
+	return CheckValidationError(err, jwt.ValidationErrorId) // JTI
 }
 
 // IsIssuedAtError checks error is an IAT (Issued at) validation error.
 func IsIssuedAtError(err error) bool {
-	return CheckValidationError(err, jwt.ValidationErrorIssuedAt)
+	return CheckValidationError(err, jwt.ValidationErrorIssuedAt) // IAT
 }
 
 // IsIssuerError checks error is an ISS (Issuer) validation error.
 func IsIssuerError(err error) bool {
-	return CheckValidationError(err, jwt.ValidationErrorIssuer)
+	return CheckValidationError(err, jwt.ValidationErrorIssuer) // ISS
 }
 
 // IsNotValidYetError checks error is a NBF (Not before) validation error.
 func IsNotValidYetError(err error) bool {
-	return CheckValidationError(err, jwt.ValidationErrorNotValidYet)
+	return CheckValidationError(err, jwt.ValidationErrorNotValidYet) // NBF
 }
 
 // // IsSubjectError checks error is a SUB (Subject) validation error.
 // func IsSubjectError(err error) bool {
-// 	return CheckValidationError(err, jwt.ValidationErrorSubject) // not found
+// 	return CheckValidationError(err, jwt.ValidationErrorSubject) // SUB, no need to check subject error
 // }
 
 // IsTokenInvalidError checks error is an invalid token (could not be parsed) error.
