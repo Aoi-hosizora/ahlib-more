@@ -4,7 +4,7 @@
 
 + xrotation
 + github.com/Aoi-hosizora/ahlib
-+ github.com/sirupsen/logrus (NOTE: do not update to v1.9.0)
++ github.com/sirupsen/logrus
 
 ## Documents
 

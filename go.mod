@@ -8,7 +8,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca
-	github.com/sirupsen/logrus v1.8.1
+	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
 	golang.org/x/text v0.3.0
