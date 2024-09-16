@@ -57,6 +57,10 @@
 + `func EncodeBytes(encoding encoding.Encoding, bs []byte) ([]byte, error)`
 + `func DecodeBytes(encoding encoding.Encoding, bs []byte) ([]byte, error)`
 + `func GetEncoding(iana string) (encode encoding.Encoding, exist bool)`
++ `func CompareBytes(s1, s2 []byte, encoding encoding.Encoding) int`
++ `func CompareString(s1, s2 string, encoding encoding.Encoding) int`
++ `func CompareChineseString(s1, s2 string, options ...collate.Option) int`
++ `func CompareJapaneseString(s1, s2 string, options ...collate.Option) int`
 
 ### Methods
 

@@ -1,6 +1,7 @@
 package xcharset
 
 import (
+	"golang.org/x/text/collate"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/charmap"
 	"golang.org/x/text/encoding/japanese"
@@ -9,6 +10,7 @@ import (
 	"golang.org/x/text/encoding/traditionalchinese"
 	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/encoding/unicode/utf32"
+	"golang.org/x/text/language"
 	"golang.org/x/text/transform"
 )
 
@@ -135,4 +137,41 @@ func GetEncoding(iana string) (encode encoding.Encoding, exist bool) {
 
 	// not found
 	return nil, false
+}
+
+// CompareBytes compares two bytes using given encoding.
+// The result will be 0 if a==b, -1 if a < b, and +1 if a > b.
+func CompareBytes(s1, s2 []byte, encoding encoding.Encoding) int {
+	a, _ := EncodeBytes(encoding, s1)
+	b, _ := EncodeBytes(encoding, s2)
+	for idx, chr := range a {
+		if idx > len(b)-1 || chr > b[idx] {
+			return 1
+		}
+		if chr < b[idx] {
+			return -1
+		}
+	}
+	if len(a) < len(b) {
+		return -1
+	}
+	return 0
+}
+
+// CompareString compares two string using given encoding.
+// The result will be 0 if a==b, -1 if a < b, and +1 if a > b.
+func CompareString(s1, s2 string, encoding encoding.Encoding) int {
+	return CompareBytes([]byte(s1), []byte(s2), encoding)
+}
+
+// CompareChineseString compares two Chinese string, by pinyin.
+func CompareChineseString(s1, s2 string, options ...collate.Option) int {
+	c := collate.New(language.Chinese, options...)
+	return c.CompareString(s1, s2)
+}
+
+// CompareJapaneseString compares two Japanese string, by yomi.
+func CompareJapaneseString(s1, s2 string, options ...collate.Option) int {
+	c := collate.New(language.Japanese, options...)
+	return c.CompareString(s1, s2)
 }

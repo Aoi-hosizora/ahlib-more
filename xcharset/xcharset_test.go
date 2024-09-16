@@ -1,8 +1,12 @@
 package xcharset
 
 import (
+	"fmt"
 	"github.com/Aoi-hosizora/ahlib/xtesting"
+	"golang.org/x/text/collate"
+	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/japanese"
+	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/encoding/unicode"
 	"testing"
 )
@@ -116,5 +120,49 @@ func TestGetEncoding(t *testing.T) {
 	} {
 		_, ok := GetEncoding(tc.give)
 		xtesting.Equal(t, ok, tc.wantOk)
+	}
+}
+
+func TestCompareString(t *testing.T) {
+	for _, tc := range []struct {
+		give1  string
+		give2  string
+		enc    encoding.Encoding
+		want   int
+		wantCh int
+		wantJa int
+	}{
+		{"", "", unicode.UTF8, 0, 0, 0},
+		{"A", "a", unicode.UTF8, -1, 1 /* <<< */, 0},
+		{"aaa", "ab", unicode.UTF8, -1, -1, -1},
+		{"bb", "bba", unicode.UTF8, -1, -1, -1},
+		{"09z", "aZ9", unicode.UTF8, -1, -1, -1},
+		{"aaa0", "000a", unicode.UTF8, 1, 1, 1},
+		{"9", "1111", unicode.UTF8, 1, -1, -1},
+
+		{"a你", "0a你", simplifiedchinese.GB18030, 1, 1, 1},
+		{"你", "你好", simplifiedchinese.GB18030, -1, -1, -1},
+		{"你好", "鸟好", simplifiedchinese.GB18030, -1, -1, -1},
+		{"你好", "鳥好", simplifiedchinese.GB18030, -1, -1 /* <<< */, -1},
+		{"你好", "你高", simplifiedchinese.GB18030, 1, 1, 1},
+		{"你好あ", "你好お", simplifiedchinese.GB18030, -1, -1, -1},
+
+		{"aん本", "あ9本", japanese.ShiftJIS, -1, -1, -1},
+		{"時", "時間", japanese.ShiftJIS, -1, -1, -1},
+		{"時間", "十間", japanese.ShiftJIS, -1, -1, -1},
+		{"時間", "時间", japanese.ShiftJIS, 1, 1, 1},
+		{"時間", "時於", japanese.ShiftJIS, 1, 1, 1},
+		{"時間ㄩ", "時間ㄚ", japanese.ShiftJIS, 0 /* <<< */, 1, 1},
+	} {
+		t.Run(fmt.Sprintf("%s-%s", tc.give1, tc.give2), func(t *testing.T) {
+			xtesting.Equal(t, CompareBytes([]byte(tc.give1), []byte(tc.give2), tc.enc), tc.want)
+			xtesting.Equal(t, CompareString(tc.give1, tc.give2, tc.enc), tc.want)
+			if tc.enc == unicode.UTF8 || tc.enc == simplifiedchinese.GB18030 {
+				xtesting.Equal(t, CompareChineseString(tc.give1, tc.give2, collate.Numeric), tc.wantCh)
+			}
+			if tc.enc == unicode.UTF8 || tc.enc == japanese.ShiftJIS {
+				xtesting.Equal(t, CompareJapaneseString(tc.give1, tc.give2, collate.Numeric, collate.IgnoreCase), tc.wantJa)
+			}
+		})
 	}
 }
